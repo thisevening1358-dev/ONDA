@@ -1,0 +1,1727 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>html,body{margin:0;padding:0;height:100%}body{background:#e9e7ef}[hidden]:not([hidden=until-found i]){display:none!important}</style>
+<title>ONDA</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="theme-color" content="#dcdff0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="app/style.css">
+</head>
+<body>
+<div id="app">
+  <div class="air" aria-hidden="true"><i class="mist"></i><i class="aurora"></i><i class="floor"></i></div>
+
+  <div id="shell">
+    <header class="top">
+      <span class="logo">ONDA</span>
+      <div class="actions">
+        <button class="icon-btn" id="openCollection" type="button" aria-label="오브제 도감" data-icon="squares"></button>
+        <button class="icon-btn" id="mode" type="button" aria-label="다크 모드" data-icon="moon"></button>
+        <button class="icon-btn" id="openMenu" type="button" aria-label="메뉴" aria-expanded="false" data-icon="list"></button>
+      </div>
+    </header>
+
+    <main class="stage" id="stage" aria-label="오브제 공간. 끌어서 돌려보고, 톡 누르면 튀어 올라요.">
+      <div class="halo" aria-hidden="true"></div>
+      <canvas id="gl" role="img" aria-label="켜진 소리들이 합쳐진 오브제"></canvas>
+      <button class="float raised press" id="timerPill" type="button" hidden><span data-icon="timer"></span><span id="timerText"></span></button>
+      <div class="float raised" id="toast" role="status" hidden><span data-icon="sparkle"></span><span>새 오브제를 찾았어요</span><span class="count" id="toastCount"></span></div>
+      <div class="caption" id="caption" aria-live="polite"><strong id="capName"></strong><span id="capParts"></span><em id="capHint" hidden>끌어서 360도로 돌려보세요</em></div>
+    </main>
+
+    <section class="mixer" id="mixer" aria-label="믹서">
+      <div id="rows"></div>
+      <div class="mixer-foot"><button class="text-btn" id="allOff" type="button">모두 끄기</button></div>
+    </section>
+
+    <div class="swipe" id="swipe" aria-label="위로 쓸어 올리면 앱을 닫아도 소리가 계속 나와요" data-icon="up"></div>
+  </div>
+
+  <div class="veil" id="veil" hidden></div>
+
+  <div class="pop glass" id="menu" role="dialog" aria-label="메뉴" hidden>
+    <div class="pop-sec"><div class="themes" id="themes" role="radiogroup" aria-label="테마"></div></div>
+    <div class="pop-sec"><span class="cap">슬립 타이머</span><div class="choices" id="timerChoices" role="radiogroup" aria-label="슬립 타이머"></div></div>
+    <div class="pop-sec"><span class="cap">프리셋</span><div class="presets" id="presets"></div></div>
+    <div class="expand" id="saveExpand"><div><div class="save-panel">
+      <h3>새 프리셋</h3>
+      <label class="cap" for="presetName">이름</label>
+      <input class="field sunken" id="presetName" maxlength="16" autocomplete="off">
+      <span class="cap">아이콘</span>
+      <div class="icon-pick" id="iconPick" role="radiogroup" aria-label="아이콘"></div>
+      <p class="hint" id="saveHint" hidden>소리를 하나 이상 켜면 저장할 수 있어요</p>
+      <div class="save-actions"><button class="cancel" id="saveCancel" type="button">취소</button><button class="wide-btn raised press" id="saveConfirm" type="button">저장</button></div>
+    </div></div></div>
+    <button class="wide-btn raised press" id="saveOpen" type="button"><span data-icon="plus"></span>지금 믹스 저장</button>
+  </div>
+
+  <div class="pop glass" id="texture" role="dialog" aria-label="소리 결" hidden>
+    <h3 id="texTitle"></h3>
+    <div class="choices" id="texChoices" role="radiogroup"></div>
+  </div>
+
+  <section id="collection" aria-label="오브제 도감" hidden>
+    <div class="col-top"><button class="icon-btn" id="closeCollection" type="button" aria-label="닫기" data-icon="back"></button><span>오브제 도감</span><span class="count" id="colCount"></span></div>
+    <div class="col-head"><h2 id="colTitle"></h2><p>모양을 보면 어떤 소리를 섞었는지 알 수 있어요</p></div>
+    <div id="groups"></div>
+  </section>
+
+  <section id="lock" aria-label="잠금 화면" hidden>
+    <img class="lock-art" id="lockArt" alt="">
+    <div class="lock-clock lock-dim"><small id="lockDate"></small><b id="lockTime"></b></div>
+    <div class="lock-list night" id="lockList" hidden><div class="cap">프리셋</div><div id="lockPresets"></div><div class="cap">슬립 타이머</div><div class="choices lock-timer" id="lockTimer" role="radiogroup" aria-label="슬립 타이머"></div></div>
+    <div class="player night">
+      <div class="now">
+        <button class="open-app" id="openApp" type="button" aria-label="ONDA 열기"><img id="lockThumb" alt=""><span><b id="lockTitle"></b><small id="lockSub"></small></span></button>
+        <button class="round" id="lockListBtn" type="button" aria-label="프리셋 고르기" data-icon="list"></button>
+      </div>
+      <div class="controls">
+        <button id="prevPreset" type="button" aria-label="이전 프리셋" data-icon="prev"></button>
+        <button class="play" id="playPause" type="button" aria-label="일시정지" data-icon="pause"></button>
+        <button id="nextPreset" type="button" aria-label="다음 프리셋" data-icon="next"></button>
+      </div>
+    </div>
+    <div class="lock-bar"></div>
+  </section>
+</div>
+
+<div id="intro" aria-hidden="true">
+  <i class="fog" style="width:70%;height:40%;left:-10%;top:10%;--fx:-40%;--fy:-30%"></i>
+  <i class="fog" style="width:80%;height:46%;right:-20%;top:40%;--fx:45%;--fy:10%"></i>
+  <i class="fog" style="width:90%;height:40%;left:5%;bottom:-10%;--fx:-10%;--fy:50%"></i>
+  <span class="word">ONDA</span>
+</div>
+
+<script>
+  // a safety net: whatever happens in the app script, the fog lifts
+  (function () {
+    var lift = function () { var i = document.getElementById('intro'); if (!i || i.classList.contains('lift')) return; i.classList.add('lift'); setTimeout(function () { i.remove(); }, 2500); };
+    window.__ondaLift = lift;
+    setTimeout(lift, 6000);
+    window.addEventListener('error', function () { setTimeout(lift, 300); });
+    window.addEventListener('unhandledrejection', function () { setTimeout(lift, 300); });
+  })();
+</script>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"
+} }
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { mergeVertices, mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+const GEO_WORKER_SRC = "import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.169.0/+esm';\nimport { mergeVertices, mergeGeometries } from 'https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/utils/BufferGeometryUtils.js/+esm';\nimport { RoundedBoxGeometry } from 'https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/geometries/RoundedBoxGeometry.js/+esm';\n/* ONDA shapes: the milky material and every object's geometry, for all three themes.\n   Built from \ubabd\ud658 \uc624\ube0c\uc81c/index.html (material, helpers, nature set) and \uc0c8 \uc624\ube0c\uc81c/*.js (city and noise sets). */\n// mesh resolution: objects render small on a phone, so touch devices build lighter meshes\nconst GEO_Q = __GEO_Q__;\nconst reduceMotion = false;\nconst MO = reduceMotion ? 0.3 : 1;\nconst clamp = (v, a, b) => Math.min(b, Math.max(a, v));\nconst V2 = (x, y) => new THREE.Vector2(x, y), V3 = (x, y, z) => new THREE.Vector3(x, y, z);\n\n// The four sounds. Each object is a milky body with two soft lights inside it (pos = height 0..1, rad = size vs the object)\nconst TRACKS = [\n  { id: 'fire', label: 'FIRE', ko: '\ubaa8\ub2e5\ubd88', color: '#ff6a2b', body: '#fff3ea', rim: '#ffd8c6',\n    glowA: '#ff3b2f', posA: 0.66, radA: 0.4, glowB: '#ffc65a', posB: 0.28, radB: 0.55 },\n  { id: 'wave', label: 'WAVE', ko: '\ud30c\ub3c4', color: '#1fa8e8', body: '#eef7ff', rim: '#cde2ff',\n    glowA: '#2fc2ff', posA: 0.35, radA: 0.55, glowB: '#a18aff', posB: 0.8, radB: 0.38 },\n  { id: 'wind', label: 'WIND', ko: '\ubd04\ubc14\ub78c', color: '#46c983', body: '#f2fbf2', rim: '#d3f0dd',\n    glowA: '#3fdc98', posA: 0.55, radA: 0.5, glowB: '#fff07a', posB: 0.2, radB: 0.42 },\n  { id: 'rain', label: 'RAIN', ko: '\ube57\uc18c\ub9ac', color: '#7088ff', body: '#f1f1ff', rim: '#d8dbff',\n    glowA: '#566bff', posA: 0.26, radA: 0.52, glowB: '#ff9bd4', posB: 0.72, radB: 0.3 },\n];\n// What two or more sounds become. Keys list the sounds in TRACKS order.\nconst COMBOS = {\n  'fire+wave':      { name: '\ubb3c\uc548\uac1c', body: '#f6f3f8', rim: '#e2dcea', glowA: '#ffa985', posA: 0.2, radA: 0.46, glowB: '#a8e6ff', posB: 0.82, radB: 0.46 },\n  'fire+wind':      { name: '\ubd88\uc528', body: '#fff1e8', rim: '#f2d4c6', glowA: '#ff4a2b', posA: 0.16, radA: 0.42, glowB: '#ffc65a', posB: 0.78, radB: 0.42 },\n  'fire+rain':      { name: '\uaebc\uc9c4 \ubaa8\ub2e5\ubd88', body: '#f2eef2', rim: '#dcd6e2', glowA: '#ff5a3a', posA: 0.14, radA: 0.26, glowB: '#b8b2dc', posB: 0.72, radB: 0.5 },\n  'wave+wind':      { name: '\ubb3c\ubcf4\ub77c', body: '#effaff', rim: '#cfe9ff', glowA: '#38c8ff', posA: 0.32, radA: 0.5, glowB: '#86f0cf', posB: 0.86, radB: 0.36 },\n  'wave+rain':      { name: '\ube57\ubc29\uc6b8 \ubb3c\uacb0', body: '#eff2ff', rim: '#d3dbff', glowA: '#4d7bff', posA: 0.4, radA: 0.5, glowB: '#c5a8ff', posB: 0.82, radB: 0.35 },\n  'wind+rain':      { name: '\ube44\ubc14\ub78c', body: '#f1f3ff', rim: '#d6dcff', glowA: '#7d8cff', posA: 0.72, radA: 0.5, glowB: '#7ef0b8', posB: 0.12, radB: 0.42 },\n  'fire+wave+wind': { name: '\ub178\uc744', body: '#fff3ee', rim: '#f2d6e6', glowA: '#ff6a3d', posA: 0.72, radA: 0.4, glowB: '#8a7dff', posB: 0.16, radB: 0.5 },\n  'fire+wave+rain': { name: '\uc628\ucc9c', body: '#f4f6ff', rim: '#dbe3f7', glowA: '#5fd8ff', posA: 0.25, radA: 0.5, glowB: '#ffb09a', posB: 0.82, radB: 0.4 },\n  'fire+wind+rain': { name: '\ubb34\uc9c0\uac1c', body: '#fbf8ff', rim: '#e8e0f7', glowA: '#ffd1e6', posA: 0.15, radA: 0.3, glowB: '#c9e6ff', posB: 0.15, radB: 0.3, rainbow: 1 },\n  'wave+wind+rain': { name: '\ud3ed\ud48d', body: '#eef0ff', rim: '#cfd4f5', glowA: '#4f55ff', posA: 0.5, radA: 0.38, glowB: '#6fe0ff', posB: 0.2, radB: 0.6 },\n  'fire+wave+wind+rain': { name: '\uc791\uc740 \ud589\uc131', body: '#f7f4ff', rim: '#dcd9f2', glowA: '#ff8a5a', posA: 0.72, radA: 0.45, glowB: '#4f9dff', posB: 0.32, radB: 0.45 },\n};\n\n\n/* ---------- Material: a milky, velvet body lit from inside ----------\n   The skin is near white and matte. Two soft lights inside show through it, strongest where the body is thick\n   (facing you) and fading toward the edges. The silhouette itself fades out, so every shape dissolves into the air.\n   The rainbow form colours its arc in bands instead. */\nconst U = { time: { value: 0 }, dark: { value: 0 } };\nfunction dreamMat(t, geo, { deform = '', amp, hit }) {\n  const box = geo.boundingBox, bs = geo.boundingSphere, h = box.max.y - box.min.y;\n  const cx = (box.min.x + box.max.x) / 2, cz = (box.min.z + box.max.z) / 2 + bs.radius * 0.12;\n  return new THREE.ShaderMaterial({\n    transparent: true, depthWrite: false,\n    uniforms: {\n      uTime: U.time, uDark: U.dark, uAmp: amp, uHit: hit, uRainbow: { value: t.rainbow || 0 },\n      uY: { value: V2(box.min.y, box.max.y) },\n      uBody: { value: new THREE.Color(t.body) }, uRim: { value: new THREE.Color(t.rim) },\n      uGA: { value: new THREE.Color(t.glowA) }, uGB: { value: new THREE.Color(t.glowB) },\n      uPA: { value: V3(cx, box.min.y + h * t.posA, cz) }, uPB: { value: V3(cx, box.min.y + h * t.posB, cz) },\n      uRA: { value: bs.radius * t.radA * 1.4 }, uRB: { value: bs.radius * t.radB * 1.4 },\n    },\n    vertexShader: `uniform float uTime; uniform float uAmp; uniform float uHit; uniform vec2 uY;\n      varying vec3 vP; varying vec3 vN; varying vec3 vV;\n      void main() {\n        vec3 transformed = position; vec3 objectNormal = normal;\n        float hgt = clamp((position.y - uY.x) / (uY.y - uY.x), 0.0, 1.0);\n        ${deform}\n        // soft wobble after a merge, like a balloon settling\n        float jelly = sin(position.y * 5.0 + uTime * 9.0) * 0.6 + sin(position.x * 4.0 - uTime * 7.0) * 0.4 + sin(position.z * 4.5 + uTime * 8.0) * 0.3;\n        transformed += objectNormal * jelly * uHit * 0.06;\n        vP = position;\n        vec4 mv = modelViewMatrix * vec4(transformed, 1.0);\n        vV = -mv.xyz; vN = normalize(normalMatrix * objectNormal);\n        gl_Position = projectionMatrix * mv;\n      }`,\n    fragmentShader: `uniform vec3 uBody; uniform vec3 uRim; uniform vec3 uGA; uniform vec3 uGB; uniform vec3 uPA; uniform vec3 uPB;\n      uniform float uRA; uniform float uRB; uniform float uDark; uniform float uRainbow;\n      varying vec3 vP; varying vec3 vN; varying vec3 vV;\n      vec3 hsv2rgb(vec3 c) { vec3 p = abs(fract(c.xxx + vec3(0.0, 2.0 / 3.0, 1.0 / 3.0)) * 6.0 - 3.0); return c.z * mix(vec3(1.0), clamp(p - 1.0, 0.0, 1.0), c.y); }\n      void main() {\n        vec3 n = normalize(vN), v = normalize(vV);\n        float facing = clamp(dot(n, v), 0.0, 1.0);\n        float lit = 0.66 + 0.24 * clamp(dot(n, normalize(vec3(-0.5, 0.8, 0.6))), 0.0, 1.0);   // one wide, soft key light\n        vec3 col = mix(uRim, uBody, smoothstep(0.0, 0.7, facing)) * lit * mix(1.0, 0.34, uDark);\n        float depth = mix(0.3, 1.0, facing);   // the inner light shows most through the thick middle\n        if (uRainbow > 0.5) {\n          float band = clamp((length(vP.xy) - 0.76) / 0.48, 0.0, 1.0);\n          col = mix(col, hsv2rgb(vec3(0.84 - band * 0.84, 0.5, 1.0)) * mix(1.0, 0.7, uDark), 0.8 * depth * step(0.0, vP.y + 0.05));\n        }\n        float a = exp(-pow(distance(vP, uPA) / uRA, 2.0)) * depth;\n        float b = exp(-pow(distance(vP, uPB) / uRB, 2.0)) * depth;\n        col = mix(col, uGA, a * 0.95); col = mix(col, uGB, b * 0.9);\n        col += (uGA * a + uGB * b) * mix(0.06, 0.14, uDark);\n        float alpha = smoothstep(0.02, 0.55, facing);   // the silhouette dissolves instead of ending in a hard edge\n        gl_FragColor = vec4(col, alpha);\n        #include <colorspace_fragment>\n      }`,\n  });\n}\n\n/* ---------- Geometry helpers: soft solids shrink-wrapped from signed distance fields ---------- */\nfunction editVerts(g, fn) { const p = g.attributes.position, v = V3(); for (let i = 0; i < p.count; i++) { v.fromBufferAttribute(p, i); fn(v, i); p.setXYZ(i, v.x, v.y, v.z); } p.needsUpdate = true; return g; }\nfunction smooth(g) { g.deleteAttribute('uv'); g.deleteAttribute('normal'); const o = mergeVertices(g, 1e-4); o.computeVertexNormals(); return o; }\nfunction merge(...gs) { return mergeGeometries(gs.map((g) => { if (g.attributes.uv) g.deleteAttribute('uv'); if (g.attributes.uv1) g.deleteAttribute('uv1'); return g; })); }\nconst smin = (a, b, k) => { const h = Math.max(k - Math.abs(a - b), 0) / k; return Math.min(a, b) - h * h * k * 0.25; };\nconst sph = (x, y, z, cx, cy, cz, r, sy = 1, sz = 1) => Math.hypot(x - cx, (y - cy) / sy, (z - cz) / sz) - r;\nconst blobs = (list, k) => (x, y, z) => { let d = 1e9; for (const b of list) d = smin(d, sph(x, y, z, ...b), k); return d; };\n// iq's round cone: sphere r1 at the base, sphere r2 at height h, tilted by `tilt` around z\nfunction roundCone(x, y, z, bx, by, r1, r2, h, tilt = 0, zs = 1) {\n  const px = x - bx, py = y - by, c = Math.cos(tilt), s = Math.sin(tilt);\n  const rx = px * c + py * s, ry = -px * s + py * c, rz = z / zs;\n  const qx = Math.hypot(rx, rz), qy = ry, b = (r1 - r2) / h, a = Math.sqrt(1 - b * b), k = -b * qx + a * qy;\n  if (k < 0) return Math.hypot(qx, qy) - r1;\n  if (k > a * h) return Math.hypot(qx, qy - h) - r2;\n  return qx * a + qy * b - r1;\n}\nfunction shrinkWrap(sdf, { center = [0, 0, 0], seg = [150, 110], rMax = 2.6 } = {}) {\n  const g = new THREE.SphereGeometry(1, Math.max(24, Math.round(seg[0] * GEO_Q)), Math.max(16, Math.round(seg[1] * GEO_Q))), c = V3(...center), d = V3();\n  const f = (t) => sdf(c.x + d.x * t, c.y + d.y * t, c.z + d.z * t);\n  editVerts(g, (v) => {\n    d.copy(v).normalize();\n    let t = rMax, s = f(t);\n    while (t > 0 && s > 0) { t -= Math.max(s * 0.8, 0.003); s = f(t); }   // outermost surface along the ray\n    let lo = Math.max(t, 0), hi = lo + 0.02;\n    for (let i = 0; i < 14; i++) { const m = (lo + hi) / 2; if (f(m) < 0) lo = m; else hi = m; }\n    v.copy(d).multiplyScalar(lo).add(c);\n  });\n  return smooth(g);\n}\n// a tube along a path whose thickness follows radius(u), u = 0..1 from start to end\nfunction taperTube(points, radius, { T = 260, R = 30, zs = 1.3 } = {}) {\n  T = Math.max(40, Math.round(T * GEO_Q)); R = Math.max(10, Math.round(R * GEO_Q));\n  const path = new THREE.CatmullRomCurve3(points.map((p) => V3(...p)));\n  const g = new THREE.TubeGeometry(path, T, 1, R, false), c = V3();\n  editVerts(g, (v, k) => { const u = Math.floor(k / (R + 1)) / T; path.getPointAt(u, c); v.sub(c).multiplyScalar(radius(u)); v.z *= zs; v.add(c); });\n  return smooth(g);\n}\nconst cap = (u, a, b) => Math.sqrt(Math.max(0, 1 - Math.pow(Math.max(0, u - a) / (1 - a), 2))) * Math.min(1, u / b);   // round ends\n\n/* ---------- The four sounds ---------- */\nfunction waveGeo(stretch = 1) {\n  const s = new THREE.Shape();\n  s.moveTo(-1.14, -0.4); s.lineTo(0.85, -0.42);\n  s.splineThru([V2(0.92, -0.3), V2(0.9, -0.1), V2(0.78, 0.1), V2(0.7, 0.32), V2(0.74, 0.52), V2(0.86, 0.6), V2(0.98, 0.56), V2(1.02, 0.44),\n    V2(1.14, 0.5), V2(1.16, 0.7), V2(1.04, 0.88), V2(0.82, 0.96), V2(0.56, 0.9), V2(0.3, 0.7), V2(0.0, 0.4), V2(-0.4, 0.12), V2(-0.82, -0.14), V2(-1.14, -0.33)]);\n  s.closePath();\n  const g = new THREE.ExtrudeGeometry(s, { depth: 0.28, bevelEnabled: true, bevelThickness: 0.32, bevelSize: 0.2, bevelSegments: 8, curveSegments: 8, steps: 2 });\n  editVerts(g, (v) => { v.x *= 0.82; v.y *= stretch; v.z -= 0.14; v.z *= 1 + 0.25 * Math.cos(v.x * 1.4); });\n  return smooth(g);\n}\nfunction cloudGeo(scale = 1) {\n  return shrinkWrap(blobs([[0, 0, 0, 0.52, 1, 0.8], [-0.56, -0.1, 0, 0.38, 1, 0.8], [0.58, -0.08, 0.02, 0.4, 1, 0.8],\n    [-0.22, 0.3, 0, 0.42, 1, 0.8], [0.26, 0.26, -0.02, 0.38, 1, 0.8], [0, -0.06, 0.18, 0.42, 1, 0.8]].map((b) => [b[0] * scale, b[1] * scale, b[2] * scale, b[3] * scale, b[4], b[5]]), 0.26 * scale));\n}\nconst SINGLE = {\n  fire: () => shrinkWrap((x, y, z) => {\n    let d = roundCone(x, y, z, 0.04, -0.4, 0.5, 0.07, 1.45, 0.08, 0.9);\n    d = smin(d, roundCone(x, y, z, -0.3, -0.3, 0.3, 0.07, 0.98, 0.34, 0.9), 0.2);\n    return smin(d, roundCone(x, y, z, 0.34, -0.36, 0.28, 0.07, 0.8, -0.38, 0.9), 0.2);\n  }, { center: [0, -0.2, 0], seg: [170, 130] }),\n  rain: () => shrinkWrap((x, y, z) => roundCone(x, y, z, 0, -0.3, 0.6, 0.05, 1.05, -0.05), { center: [0, -0.25, 0], seg: [140, 110] }),\n  wind: () => {\n    const pts = [];\n    for (let i = 0; i <= 90; i++) { const u = i / 90, th = 0.5 + u * 2.2 * Math.PI, R = 0.1 + 0.6 * u; pts.push([R * Math.cos(th), R * Math.sin(th), 0]); }\n    const e = pts.at(-1);\n    for (let i = 1; i <= 24; i++) { const u = i / 24; pts.push([e[0] - u * 0.95, e[1] - 0.05 * u - 0.08 * Math.sin(u * Math.PI), 0]); }\n    return taperTube(pts, (u) => {\n      const sw = 0.72;\n      if (u < sw) return 0.035 + 0.2 * Math.pow(u / sw, 0.7) * Math.min(1, u / 0.04);\n      const k = (u - sw) / (1 - sw); return 0.235 * Math.sqrt(Math.max(0, 1 - k * k)) + 0.004;\n    }, { T: 360, R: 36, zs: 1.35 });\n  },\n  wave: () => waveGeo(),\n};\n\n/* ---------- What they become together ---------- */\n// an ellipsoid with radii a, b, c whose distance is scaled by its smallest radius, so tracing never steps past the surface\nconst ell = (x, y, z, cx, cy, cz, a, b, c) => (Math.hypot((x - cx) / a, (y - cy) / b, (z - cz) / c) - 1) * Math.min(a, b, c);\nconst COMBO_SHAPES = {\n  // \ubb3c\uc548\uac1c: puffy clumps of mist lying low over a pool of water, small puffs drifting loose above\n  'fire+wave': () => merge(\n    shrinkWrap((x, y, z) => ell(x, y, z, 0, -0.62, 0, 0.92, 0.08, 0.8), { center: [0, -0.62, 0], seg: [150, 90] }),\n    shrinkWrap(blobs([[-0.66, -0.4, 0.04, 0.18, 0.75], [-0.42, -0.36, -0.04, 0.22, 0.75], [-0.14, -0.38, 0.06, 0.24, 0.75], [0.16, -0.36, -0.02, 0.23, 0.75],\n      [0.44, -0.38, 0.05, 0.2, 0.75], [0.68, -0.42, 0.0, 0.15, 0.75]], 0.14), { center: [0, -0.38, 0], seg: [170, 110] }),\n    shrinkWrap(blobs([[-0.36, -0.12, 0.0, 0.15, 0.8], [-0.14, -0.1, 0.03, 0.17, 0.8], [0.08, -0.13, -0.02, 0.13, 0.8]], 0.1), { center: [-0.14, -0.12, 0], seg: [120, 80] }),\n    shrinkWrap(blobs([[0.3, 0.1, 0.0, 0.11, 0.8], [0.46, 0.12, 0.02, 0.09, 0.8]], 0.08), { center: [0.38, 0.11, 0], seg: [90, 60] }),\n    new THREE.SphereGeometry(0.07, 24, 16).scale(1, 0.8, 1).translate(-0.04, 0.28, 0)).rotateX(0.24),\n  // \ubd88\uc528: a small flame leaning in the wind, tiny sparks lifted off it and scattering\n  'fire+wind': () => merge(\n    SINGLE.fire().scale(0.34, 0.34, 0.34).rotateZ(-0.16).translate(-0.24, -0.5, 0),\n    ...[[0.06, -0.04, 0.034], [0.0, 0.1, 0.026], [0.18, 0.06, 0.03], [0.14, 0.22, 0.024], [0.3, 0.16, 0.022], [0.06, 0.3, 0.02],\n      [0.26, 0.34, 0.019], [0.42, 0.3, 0.018], [0.36, 0.46, 0.015], [0.18, 0.46, 0.014], [0.52, 0.48, 0.013], [0.46, 0.6, 0.011],\n      [0.3, 0.6, 0.01], [0.6, 0.62, 0.01], [0.56, 0.74, 0.008], [0.4, 0.76, 0.008]]\n      .map(([sx, sy, r], i) => new THREE.SphereGeometry(r, 14, 10).translate(sx - 0.08, sy - 0.06, 0.06 * ((i * 7) % 3) - 0.06))),\n  // \uaebc\uc9c4 \ubaa8\ub2e5\ubd88: crossed charred logs on a heap of ash, the last embers, two thin curls of smoke\n  'fire+rain': () => merge(\n    shrinkWrap((x, y, z) => ell(x, y, z, 0, -0.66, 0, 0.66, 0.14, 0.5), { center: [0, -0.66, 0], seg: [140, 90] }),\n    ...[0.55, -0.55, 1.6].map((a, i) => new THREE.CapsuleGeometry(0.075, 0.68, 8, 18).rotateZ(Math.PI / 2).rotateZ(i === 2 ? 0 : 0.18 * Math.sign(a)).rotateY(a).translate(0, -0.5 + i * 0.06, 0)),\n    ...[[-0.14, -0.48, 0.2, 0.05], [0.12, -0.46, 0.16, 0.04], [0.02, -0.5, -0.14, 0.04]].map(([ex, ey, ez, r]) => new THREE.SphereGeometry(r, 18, 12).translate(ex, ey, ez)),\n    taperTube([[0.0, -0.36, 0.0], [0.12, -0.12, 0.02], [-0.06, 0.12, 0.0], [0.1, 0.36, -0.02], [-0.02, 0.62, 0.0]], (u) => 0.012 + 0.07 * (1 - u) * Math.min(1, u / 0.1 + 0.4), { T: 160, R: 18 }),\n    taperTube([[0.16, -0.38, 0.04], [0.28, -0.2, 0.06], [0.2, 0.0, 0.04], [0.32, 0.18, 0.02]], (u) => 0.01 + 0.045 * (1 - u) * Math.min(1, u / 0.1 + 0.4), { T: 120, R: 16 })).rotateX(0.22),\n  // \ubb3c\ubcf4\ub77c: a smaller wave whose crest breaks into foam, spray bursting off it in an arc\n  'wave+wind': () => merge(\n    waveGeo(1.05).scale(0.62, 0.62, 0.62).translate(-0.34, -0.42, 0),\n    shrinkWrap(blobs([[0.08, 0.2, 0.04, 0.11], [0.22, 0.16, -0.03, 0.09], [-0.04, 0.24, 0.0, 0.08], [0.32, 0.08, 0.02, 0.07]], 0.06), { center: [0.14, 0.17, 0], seg: [110, 80] }),\n    ...[[0.2, 0.42, 0.04, 0.07], [0.38, 0.4, -0.05, 0.062], [0.52, 0.3, 0.05, 0.055], [0.06, 0.52, -0.02, 0.05], [0.32, 0.58, 0.05, 0.048], [0.62, 0.16, -0.03, 0.045],\n      [0.48, 0.52, -0.04, 0.04], [0.7, 0.34, 0.04, 0.038], [0.18, 0.68, 0.02, 0.035], [0.78, 0.04, 0.0, 0.034], [0.62, 0.5, 0.05, 0.03], [0.4, 0.72, -0.03, 0.028],\n      [0.84, 0.22, -0.05, 0.026], [0.74, 0.62, 0.0, 0.022], [0.9, 0.42, 0.03, 0.02]]\n      .map(([dx, dy, dz, r]) => new THREE.SphereGeometry(r, 20, 14).translate(dx, dy, dz))),\n  // \ube57\ubc29\uc6b8 \ubb3c\uacb0: two ripples spreading and a drop just landing\n  'wave+rain': () => merge(\n    new THREE.TorusGeometry(0.5, 0.05, 14, 80).rotateX(Math.PI / 2).translate(0, 0.21, 0),\n    new THREE.TorusGeometry(0.84, 0.045, 14, 100).rotateX(Math.PI / 2).translate(0, 0.14, 0),\n    shrinkWrap((x, y, z) => roundCone(x, y, z, 0, 0.5, 0.17, 0.02, 0.36), { center: [0, 0.58, 0], seg: [60, 40] }),\n  ).rotateX(0.8),\n  // \ube44\ubc14\ub78c: a cloud with rain streaks slanting in the wind\n  'wind+rain': () => merge(cloudGeo(1),\n    ...[-0.5, -0.17, 0.16, 0.49].map((x, i) => new THREE.CapsuleGeometry(0.055, 0.34, 6, 12).rotateZ(-0.45).translate(x - 0.1, -0.74 - (i % 2) * 0.16, 0.05))),\n  // \ub178\uc744: the sun half set behind a band of sea\n  'fire+wave+wind': () => {\n    const s = new THREE.Shape(); s.moveTo(-1.25, -0.8); s.lineTo(1.25, -0.8);\n    const top = []; for (let i = 0; i <= 40; i++) { const x = 1.25 - i * 2.5 / 40; top.push(V2(x, -0.3 + 0.07 * Math.sin(x * 5))); }\n    s.splineThru(top); s.closePath();\n    const sea = smooth(new THREE.ExtrudeGeometry(s, { depth: 0.3, bevelEnabled: true, bevelThickness: 0.16, bevelSize: 0.12, bevelSegments: 6, curveSegments: 3 }).translate(0, 0, -0.15));\n    return merge(new THREE.SphereGeometry(0.78, 64, 48).scale(1, 1, 0.6).translate(0, 0.12, -0.25), sea);\n  },\n  // \uc628\ucc9c: a round pool with a thick rim, steam rising from it\n  'fire+wave+rain': () => merge(\n    shrinkWrap((x, y, z) => sph(x, y, z, 0, -0.3, 0, 0.92, 0.4, 0.92), { center: [0, -0.3, 0], seg: [120, 80] }),\n    new THREE.TorusGeometry(0.88, 0.13, 18, 96).rotateX(Math.PI / 2).translate(0, -0.18, 0),\n    shrinkWrap(blobs([[-0.32, 0.12, 0, 0.17], [0, 0.2, 0, 0.21], [0.32, 0.1, 0, 0.16], [-0.2, 0.46, 0, 0.14], [0.16, 0.52, 0, 0.15], [-0.02, 0.8, 0, 0.11]], 0.18), { center: [0, 0.3, 0], seg: [100, 70] }),\n  ).rotateX(0.45),\n  // \ubb34\uc9c0\uac1c: an arch resting on two small clouds\n  'fire+wind+rain': () => merge(\n    new THREE.TorusGeometry(1, 0.24, 28, 140, Math.PI),\n    shrinkWrap(blobs([[-1, -0.06, 0, 0.3], [-1.28, -0.12, 0, 0.2], [-0.74, -0.14, 0.02, 0.2]], 0.16), { center: [-1, -0.08, 0], seg: [80, 60] }),\n    shrinkWrap(blobs([[1, -0.06, 0, 0.3], [1.28, -0.12, 0, 0.2], [0.74, -0.14, 0.02, 0.2]], 0.16), { center: [1, -0.08, 0], seg: [80, 60] }),\n  ),\n  // \ud3ed\ud48d: a spiral of cloud winding into a calm eye, seen at an angle\n  'wave+wind+rain': () => {\n    const pts = [];\n    for (let i = 0; i <= 140; i++) { const u = i / 140, th = u * 2.6 * Math.PI, R = 0.2 + 0.85 * u; pts.push([R * Math.cos(th), R * Math.sin(th), 0.06 * Math.sin(th * 2)]); }\n    return merge(taperTube(pts, (u) => (0.07 + 0.2 * u) * cap(u, 0.86, 0.04) + 0.004, { T: 420, R: 30, zs: 1.1 }),\n      new THREE.SphereGeometry(0.16, 32, 24)).rotateX(-0.7);\n  },\n  // \uc791\uc740 \ud589\uc131: everything at once, a small world with a ring and a moon\n  'fire+wave+wind+rain': () => merge(\n    new THREE.SphereGeometry(0.78, 64, 48),\n    new THREE.TorusGeometry(1.22, 0.065, 14, 140).rotateX(Math.PI / 2.4).rotateZ(0.32),\n    new THREE.SphereGeometry(0.17, 32, 24).translate(1.22, 0.78, 0.2),\n  ),\n};\n\n// Idle motion, in each object's own space (hgt = 0 at the bottom, 1 at the top)\nconst DEFORM = {\n  fire: `transformed.x += sin(uTime * 1.3 + position.y * 1.8) * 0.07 * hgt * hgt * uAmp;\n         transformed.z += cos(uTime * 1.05 + position.y * 1.5) * 0.05 * hgt * hgt * uAmp;`,\n  wave: `transformed.y += sin(position.x * 2.6 - uTime * 1.4) * 0.05 * hgt * uAmp;\n         transformed.x += sin(uTime * 0.9) * 0.04 * hgt * hgt * uAmp;`,\n  wind: `transformed.xy += normalize(position.xy + 0.001) * sin(length(position.xy) * 9.0 - uTime * 2.2) * 0.022 * uAmp;`,\n  rain: `transformed.y *= 1.0 + 0.04 * sin(uTime * 2.2) * uAmp;\n         transformed.xz *= 1.0 - 0.02 * sin(uTime * 2.2) * uAmp;`,\n  combo: `transformed += objectNormal * sin(uTime * 1.2 + position.y * 2.2 + position.x * 1.3) * 0.02 * uAmp;`,\n};\n\n\n/* ---------- New sounds: CITY (\ub3c4\uc2ec) and NOISE (\ud654\uc774\ud2b8 \ub178\uc774\uc988) ----------\n   Same material as the nature set: a milky body with two soft lights inside (pos = height 0..1, rad = size vs the object).\n   Needs the helpers from \ubabd\ud658 \uc624\ube0c\uc81c/index.html: smin, sph, roundCone, shrinkWrap, smooth, merge, cloudGeo. */\nconst NEW_TRACKS = [\n  // CITY\n  { id: 'coffee', label: 'COFFEE', ko: '\ucee4\ud53c \ub0b4\ub9ac\uae30', theme: 'city', body: '#fff4ea', rim: '#f0dccb',\n    glowA: '#c9784a', posA: 0.22, radA: 0.5, glowB: '#ffd99c', posB: 0.82, radB: 0.42 },\n  { id: 'train', label: 'TRAIN', ko: '\ubc24\uae30\ucc28', theme: 'city', body: '#f3f2ff', rim: '#dadcf6',\n    glowA: '#ffcf5e', posA: 0.62, radA: 0.42, glowB: '#6f7dff', posB: 0.12, radB: 0.5 },\n  { id: 'typing', label: 'TYPING', ko: '\ud0c0\uc790 \uc18c\ub9ac', theme: 'city', body: '#f4f6ff', rim: '#d9dff2',\n    glowA: '#8fb0ff', posA: 0.35, radA: 0.5, glowB: '#ffb8dc', posB: 0.85, radB: 0.36 },\n  { id: 'page', label: 'PAGE', ko: '\ucc45\uc7a5 \ub118\uae30\uae30', theme: 'city', body: '#fffaf1', rim: '#efe3d2',\n    glowA: '#ffc16e', posA: 0.45, radA: 0.48, glowB: '#9fc2ff', posB: 0.9, radB: 0.34 },\n  // NOISE\n  { id: 'fan', label: 'FAN', ko: '\uc120\ud48d\uae30', theme: 'noise', body: '#effbff', rim: '#cfeaf4',\n    glowA: '#6fdcff', posA: 0.5, radA: 0.34, glowB: '#b9ffe2', posB: 0.88, radB: 0.4 },\n  { id: 'cabin', label: 'CABIN', ko: '\ube44\ud589\uae30 \uae30\ub0b4', theme: 'noise', body: '#f5f3ff', rim: '#ddd7f3',\n    glowA: '#ff9474', posA: 0.3, radA: 0.42, glowB: '#8db6ff', posB: 0.78, radB: 0.44 },\n  { id: 'static', label: 'STATIC', ko: '\ub77c\ub514\uc624 \uc7a1\uc74c', theme: 'noise', body: '#f6f3ff', rim: '#ded8f4',\n    glowA: '#6fe6dc', posA: 0.36, radA: 0.46, glowB: '#ff9bd4', posB: 0.72, radB: 0.36 },\n  { id: 'hum', label: 'HUM', ko: '\ubc24 \ub0c9\uc7a5\uace0', theme: 'noise', body: '#f2f8ff', rim: '#d6e6f4',\n    glowA: '#9fe2ff', posA: 0.3, radA: 0.5, glowB: '#fff0a8', posB: 0.64, radB: 0.36 },\n];\n\n// extra signed distance helpers\nconst smax = (a, b, k) => -smin(-a, -b, k);\nfunction roundBox(x, y, z, bx, by, bz, r) {\n  const qx = Math.abs(x) - bx + r, qy = Math.abs(y) - by + r, qz = Math.abs(z) - bz + r;\n  return Math.hypot(Math.max(qx, 0), Math.max(qy, 0), Math.max(qz, 0)) + Math.min(Math.max(qx, qy, qz), 0) - r;\n}\n// upright cylinder: radius r, half height h, edge radius rr\nfunction roundCyl(x, y, z, r, h, rr) {\n  const dx = Math.hypot(x, z) - r + rr, dy = Math.abs(y) - h + rr;\n  return Math.min(Math.max(dx, dy), 0) + Math.hypot(Math.max(dx, 0), Math.max(dy, 0)) - rr;\n}\n// one convex piece, wrapped from its own centre\nconst part = (sdf, center, seg = [110, 80]) => shrinkWrap(sdf, { center, seg });\nconst rot2 = (a, b, t) => [a * Math.cos(t) + b * Math.sin(t), -a * Math.sin(t) + b * Math.cos(t)];\nfunction roundRectShape(w, h, r) {\n  const s = new THREE.Shape(), x = -w / 2, y = -h / 2;\n  s.moveTo(x + r, y); s.lineTo(x + w - r, y); s.absarc(x + w - r, y + r, r, -Math.PI / 2, 0); s.lineTo(x + w, y + h - r);\n  s.absarc(x + w - r, y + h - r, r, 0, Math.PI / 2); s.lineTo(x + r, y + h); s.absarc(x + r, y + h - r, r, Math.PI / 2, Math.PI);\n  s.lineTo(x, y + r); s.absarc(x + r, y + r, r, Math.PI, Math.PI * 1.5); return s;\n}\n\nconst NEW_SHAPES = {\n  // a drip cone sitting on a round cup, with a little handle\n  coffee: () => merge(\n    shrinkWrap((x, y, z) => {\n      // the dripper is a cone cut flat at the top, with a soft rim\n      const cone = smax(roundCone(x, y, z, 0, -0.08, 0.14, 0.5, 0.5), y - 0.3, 0.05);\n      const rim = roundCyl(x, y - 0.3, z, 0.5, 0.05, 0.05);\n      return smin(roundCyl(x, y + 0.42, z, 0.52, 0.34, 0.16), smin(cone, rim, 0.05), 0.07);\n    }, { center: [0, -0.1, 0], seg: [160, 120] }),\n    new THREE.TorusGeometry(0.19, 0.075, 18, 56).translate(0.56, -0.4, 0)),\n  // one rounded carriage with three windows pressed into its side, on two soft wheels\n  train: () => shrinkWrap((x, y, z) => {\n    // a long body whose front end is a round nose\n    let d = smin(roundBox(x + 0.1, y, z, 0.88, 0.4, 0.4, 0.3), sph(x, y, z, 0.74, -0.02, 0, 0.42, 0.95, 0.98), 0.12);\n    for (const wx of [-0.56, -0.08, 0.4]) d = smax(d, -roundBox(x - wx, y - 0.08, z - 0.48, 0.18, 0.15, 0.17, 0.1), 0.035);\n    for (const wx of [-0.56, 0.5]) d = smin(d, sph(x, y, z, wx, -0.44, 0, 0.16, 1, 1.5), 0.05);\n    return d;\n  }, { center: [0, -0.05, 0], seg: [170, 120] }),\n  // a puffy keypad: six round keys on a soft base, one pressed down (each part wrapped on its own, so the gaps stay clean)\n  typing: () => {\n    const parts = [part((x, y, z) => roundBox(x, y + 0.3, z, 0.96, 0.15, 0.64, 0.14), [0, -0.3, 0])];\n    let i = 0;\n    for (const kz of [-0.24, 0.26]) for (const kx of [-0.6, 0, 0.6]) {\n      const ky = (i++ === 4 ? -0.08 : 0) - 0.02;\n      parts.push(part((x, y, z) => roundBox(x - kx, y - ky, z - kz, 0.21, 0.17, 0.18, 0.12), [kx, ky, kz], [70, 50]));\n    }\n    return merge(...parts).rotateX(0.62);\n  },\n  // an open book with one page lifting as it turns\n  page: () => {\n    // each leaf is a soft slab hinged at the spine\n    const leaf = (ang, w, t, d, ox, oy) => smooth(new RoundedBoxGeometry(w, t, d, 5, t / 2.2).translate(ox, oy, 0).rotateZ(ang).translate(0, -0.22, 0));\n    return merge(leaf(0.26, 0.96, 0.12, 1.2, -0.5, 0), leaf(-0.26, 0.96, 0.12, 1.2, 0.5, 0), leaf(1.05, 0.88, 0.06, 1.14, 0.46, 0.04)).rotateX(0.5);\n  },\n  // three soft blades around a hub, inside a thin guard ring\n  fan: () => merge(\n    shrinkWrap((x, y, z) => {\n      let d = sph(x, y, z, 0, 0, 0, 0.19, 1, 1.4);\n      for (let k = 0; k < 3; k++) {\n        const a = 0.35 + k * Math.PI * 2 / 3, [u, v] = rot2(x - Math.cos(a) * 0.46, y - Math.sin(a) * 0.46, a);\n        d = smin(d, (Math.hypot(u / 0.44, v / 0.27, z / 0.1) - 1) * 0.1, 0.12);\n      }\n      return d;\n    }, { center: [0, 0, 0], seg: [170, 120] }),\n    new THREE.TorusGeometry(0.98, 0.05, 16, 120)),\n  // an aeroplane window: a thick rounded frame, the pane, and clouds at dusk inside\n  cabin: () => {\n    // the frame is one soft tube around a rounded window, so it has no seams\n    const loop = roundRectShape(0.94, 1.32, 0.44).getSpacedPoints(180).map((p) => V3(p.x, p.y, 0));\n    const frame = smooth(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(loop, true), 240, 0.17, 28, true)).scale(1, 1, 1.25);\n    // the pane sits well behind the frame so the window reads as deep\n    const pane = smooth(new THREE.ExtrudeGeometry(roundRectShape(0.8, 1.18, 0.38), { depth: 0.03, bevelEnabled: true, bevelThickness: 0.015, bevelSize: 0.015, bevelSegments: 3, curveSegments: 48 }).translate(0, 0, -0.2));\n    return merge(frame, pane, cloudGeo(0.26).translate(-0.08, -0.32, -0.06), cloudGeo(0.17).translate(0.2, -0.16, -0.08));\n  },\n  // a small radio with a speaker pressed into its face, one dial and an antenna\n  static: () => merge(\n    shrinkWrap((x, y, z) => {\n      let d = roundBox(x, y, z, 0.8, 0.52, 0.34, 0.27);\n      d = smax(d, -roundCyl(x + 0.3, z - 0.42, y + 0.02, 0.27, 0.1, 0.05), 0.04);\n      return smin(d, sph(x, y, z, 0.44, 0.06, 0.32, 0.13, 1, 0.8), 0.05);\n    }, { center: [0, 0, 0], seg: [170, 120] }),\n    new THREE.CapsuleGeometry(0.035, 0.7, 6, 12).rotateZ(-0.5).translate(0.47, 0.81, -0.05),\n    new THREE.SphereGeometry(0.08, 24, 16).translate(0.66, 1.15, -0.05)),\n  // a soft, tall fridge with its door seam and two handles\n  // freezer and fridge doors as two soft blocks with a thin gap between them\n  hum: () => merge(\n    smooth(new RoundedBoxGeometry(1.04, 0.56, 0.84, 6, 0.26).translate(0, 0.6, 0)),\n    smooth(new RoundedBoxGeometry(1.04, 1.14, 0.84, 6, 0.3).translate(0, -0.29, 0)),\n    smooth(new RoundedBoxGeometry(0.09, 0.28, 0.1, 4, 0.044).translate(0.3, 0.58, 0.44)),\n    smooth(new RoundedBoxGeometry(0.09, 0.42, 0.1, 4, 0.044).translate(0.3, 0.06, 0.44))),\n};\n\n/* ---------- CITY combinations: what two or more city sounds become ----------\n   Keys list the sounds in NEW_TRACKS order (coffee, train, typing, page). Needs new-objects.js loaded first.\n   Every piece is convex or wrapped on its own, so shrinkWrap never has to see round a gap. */\nconst sdRoundRect2 = (x, y, bx, by, r) => { const qx = Math.abs(x) - bx + r, qy = Math.abs(y) - by + r; return Math.hypot(Math.max(qx, 0), Math.max(qy, 0)) + Math.min(Math.max(qx, qy), 0) - r; };\n// a flat 2D shape given thickness 2h and soft edges r\nconst slab = (d2, z, h, r) => { const wx = d2 + r, wy = Math.abs(z) - h + r; return Math.min(Math.max(wx, wy), 0) + Math.hypot(Math.max(wx, 0), Math.max(wy, 0)) - r; };\nconst rbox = (w, h, d, r, seg = 4) => smooth(new RoundedBoxGeometry(w, h, d, seg, r));\nconst cupGeo = (s) => merge(part((x, y, z) => roundCyl(x, y, z, 0.52, 0.34, 0.16), [0, 0, 0], [90, 70]), new THREE.TorusGeometry(0.19, 0.075, 16, 48).translate(0.56, 0.02, 0)).scale(s, s, s);\nconst steam = (s) => taperTube([[0, 0, 0], [0.09, 0.16, 0], [-0.07, 0.32, 0], [0.05, 0.48, 0]], (u) => 0.012 + 0.05 * (1 - u) * Math.min(1, u / 0.12 + 0.4), { T: 120, R: 16 }).scale(s, s, s);\n// a takeaway cup with a lid, wrapped as one shape so the see-through material never shows layers inside it (s = scale)\nconst takeaway = (cx, cy, cz, s = 1) => part((x, y, z) => {\n  const px = (x - cx) / s, py = (y - cy) / s, pz = (z - cz) / s, r = 0.13 + 0.045 * (py / 0.21);\n  const body = smax(Math.hypot(px, pz) - r, Math.abs(py) - 0.21, 0.035);\n  const lid = roundCyl(px, py - 0.225, pz, 0.168, 0.028, 0.02);\n  return smin(smin(body, lid, 0.015), sph(px, py, pz, 0, 0.25, 0, 0.085, 0.6), 0.02) * s;\n}, [cx, cy, cz], [100, 80]);\nconst bookBase = () => {\n  const leaf = (ang, w, t, d, ox, oy) => rbox(w, t, d, t / 2.2, 5).translate(ox, oy, 0).rotateZ(ang).translate(0, -0.22, 0);\n  return merge(leaf(0.26, 0.96, 0.12, 1.2, -0.5, 0), leaf(-0.26, 0.96, 0.12, 1.2, 0.5, 0), leaf(1.05, 0.88, 0.06, 1.14, 0.46, 0.04));\n};\n\nconst CITY_COMBOS = [\n  // \uc790\ud310\uae30 \ucee4\ud53c: the coffee machine on a station platform at dawn: a lit panel, a row of buttons, a paper cup steaming in the slot\n  { key: 'coffee+train', name: '\uc790\ud310\uae30 \ucee4\ud53c', body: '#fff4ee', rim: '#eedcd6', glowA: '#ffcf5e', posA: 0.64, radA: 0.38, glowB: '#c9784a', posB: 0.22, radB: 0.34,\n    shape: () => {\n      const F = 0.31;   // front face of the body\n      const paperCup = smooth(new THREE.CylinderGeometry(0.1, 0.072, 0.19, 36, 3).translate(0, -0.47, F + 0.12));\n      return merge(\n        rbox(0.92, 1.5, 0.62, 0.2, 6),\n        rbox(0.82, 0.16, 0.05, 0.05, 3).translate(0, 0.6, F),                      // the sign band on top\n        rbox(0.5, 0.56, 0.05, 0.07, 3).translate(-0.12, 0.2, F),                  // the lit panel of drinks\n        ...[0.38, 0.2, 0.02].map((by) => new THREE.SphereGeometry(0.055, 20, 14).scale(1, 1, 0.5).translate(0.3, by, F + 0.01)),\n        rbox(0.1, 0.05, 0.04, 0.02, 2).translate(0.3, -0.12, F + 0.01),           // the coin slot\n        rbox(0.44, 0.3, 0.12, 0.06, 3).translate(0, -0.42, F + 0.02),            // the hood over the cup slot\n        paperCup, steam(0.36).translate(0, -0.3, F + 0.12),\n        rbox(1.1, 0.06, 0.8, 0.03, 3).translate(0, -0.79, 0.04));                // the platform it stands on\n    } },\n  // \uce74\ud398 \uc791\uc5c5: an open laptop with soft keys, a cup beside it\n  { key: 'coffee+typing', name: '\uce74\ud398 \uc791\uc5c5', body: '#f4f5ff', rim: '#dadff2', glowA: '#8fb0ff', posA: 0.72, radA: 0.5, glowB: '#ffd99c', posB: 0.2, radB: 0.4,\n    shape: () => {\n      const keys = [];\n      for (const kz of [-0.02, 0.24]) for (let i = 0; i < 5; i++) keys.push(rbox(0.22, 0.05, 0.16, 0.022, 3).translate(-0.56 + i * 0.28, -0.22, kz));\n      return merge(rbox(1.6, 0.12, 1.05, 0.05).translate(0, -0.3, 0.05),\n        rbox(1.6, 1.0, 0.08, 0.035).translate(0, 0.5, 0).rotateX(-0.28).translate(0, -0.26, -0.45), ...keys,\n        cupGeo(0.34).translate(0.98, -0.12, 0.42)).rotateX(0.32);\n    } },\n  // \ubd81\uce74\ud398: an open book with a cup resting on its page\n  { key: 'coffee+page', name: '\ubd81\uce74\ud398', body: '#fff7ee', rim: '#efe2d4', glowA: '#ffc16e', posA: 0.3, radA: 0.5, glowB: '#c9784a', posB: 0.8, radB: 0.35,\n    // two books stacked a little askew, each a soft cover around a lighter block of pages, the cup on top\n    shape: () => {\n      const book = (w, h, d) => merge(rbox(w, 0.05, d, 0.024, 3).translate(0, h / 2 - 0.025, 0), rbox(w, 0.05, d, 0.024, 3).translate(0, -h / 2 + 0.025, 0),\n        rbox(0.05, h, d, 0.024, 3).translate(-w / 2 + 0.025, 0, 0), rbox(w - 0.1, h - 0.08, d - 0.08, 0.03, 3).translate(0.02, 0, 0));\n      return merge(book(1.3, 0.3, 0.92).rotateY(0.12).translate(0, -0.42, 0), book(1.1, 0.26, 0.8).rotateY(-0.2).translate(0.06, -0.14, 0.02),\n        cupGeo(0.42).translate(0.06, 0.13, 0.04), steam(0.62).translate(0.06, 0.3, 0.04)).rotateX(0.2);\n    } },\n  // \uae30\ucc28\ud45c: a soft ticket with notched sides and a perforation line\n  { key: 'train+typing', name: '\uae30\ucc28\ud45c', body: '#f5f3ff', rim: '#dcdbf5', glowA: '#ffcf5e', posA: 0.68, radA: 0.45, glowB: '#8fb0ff', posB: 0.3, radB: 0.5,\n    shape: () => shrinkWrap((x, y, z) => {\n      let d2 = sdRoundRect2(x, y, 0.84, 0.46, 0.16);\n      d2 = smax(d2, -(Math.hypot(Math.abs(x) - 0.84, y) - 0.16), 0.03);\n      let d = slab(d2, z, 0.07, 0.05);\n      for (const yy of [-0.3, -0.1, 0.1, 0.3]) d = smax(d, -sph(x, y, z, 0.36, yy, 0.08, 0.04), 0.01);\n      return d;\n    }, { center: [0, 0, 0], seg: [180, 120] }).rotateZ(-0.18).rotateX(0.28) },\n  // \uc9c0\ub3c4: a folded map standing in a zigzag, a pin on the destination\n  { key: 'train+page', name: '\uc9c0\ub3c4', body: '#f7f8ff', rim: '#dde3f2', glowA: '#ffcf5e', posA: 0.86, radA: 0.3, glowB: '#9fc2ff', posB: 0.35, radB: 0.55,\n    shape: () => merge(\n      rbox(0.62, 0.95, 0.06, 0.03).rotateY(0.5).translate(-0.53, -0.1, 0.05),\n      rbox(0.62, 0.95, 0.06, 0.03).rotateY(-0.5).translate(0, -0.1, 0.05),\n      rbox(0.62, 0.95, 0.06, 0.03).rotateY(0.5).translate(0.53, -0.1, 0.05),\n      new THREE.SphereGeometry(0.15, 32, 24).translate(0.08, 0.66, 0.24),\n      part((x, y, z) => roundCone(x, y, z, 0.08, 0.36, 0.03, 0.13, 0.28), [0.08, 0.5, 0], [60, 40]).translate(0, 0, 0.24)) },\n  // \ud0c0\uc790\uae30: a soft typewriter with a sheet rising from its roller\n  { key: 'typing+page', name: '\ud0c0\uc790\uae30', body: '#f6f6ff', rim: '#dcdff2', glowA: '#ffc16e', posA: 0.82, radA: 0.38, glowB: '#8fb0ff', posB: 0.25, radB: 0.5,\n    shape: () => {\n      const keys = [];\n      for (const [kz, ky] of [[0.3, -0.02], [0.08, 0.02]]) for (let i = 0; i < 4; i++) keys.push(rbox(0.19, 0.09, 0.14, 0.04, 3).translate(-0.42 + i * 0.28, ky, kz));\n      return merge(part((x, y, z) => roundBox(x, y + 0.25, z, 0.72, 0.24, 0.46, 0.18), [0, -0.25, 0]), ...keys,\n        new THREE.CapsuleGeometry(0.11, 1.2, 8, 20).rotateZ(Math.PI / 2).translate(0, 0.1, -0.24),\n        rbox(0.84, 0.92, 0.03, 0.012, 3).rotateX(-0.22).translate(0, 0.56, -0.34)).rotateX(0.22);\n    } },\n  // \uae30\ucc28\uc5ed \ubca4\uce58: a city platform bench with a small laptop open and a takeaway coffee on its seat, the yellow tactile strip along the platform edge\n  { key: 'coffee+train+typing', name: '\uae30\ucc28\uc5ed \ubca4\uce58', body: '#f5f4ff', rim: '#dcdcf4', glowA: '#ffcf5e', posA: 0.55, radA: 0.42, glowB: '#c9784a', posB: 0.3, radB: 0.32,\n    shape: () => {\n      const seatY = -0.14, seatTop = seatY + 0.045;\n      const bumps = [];\n      for (const bz of [0.34, 0.42]) for (let i = 0; i < 13; i++) bumps.push(new THREE.SphereGeometry(0.022, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2).translate(-0.78 + i * 0.13, -0.57, bz));\n      return merge(\n        rbox(1.9, 0.06, 1.0, 0.03, 3).translate(0, -0.62, 0.02),                              // the platform floor\n        rbox(1.9, 0.02, 0.2, 0.01, 2).translate(0, -0.585, 0.38), ...bumps,                  // the tactile strip\n        ...[-0.6, 0.6].map((lx) => rbox(0.08, 0.42, 0.42, 0.04, 3).translate(lx, -0.38, 0)),  // legs\n        rbox(1.5, 0.09, 0.48, 0.045, 4).translate(0, seatY, 0.02),                            // seat\n        rbox(1.5, 0.36, 0.08, 0.04, 4).rotateX(-0.18).translate(0, 0.13, -0.25),               // backrest\n        // a small laptop left open on the seat\n        merge(rbox(0.46, 0.03, 0.32, 0.015, 2).translate(0, 0.015, 0.08),\n          rbox(0.46, 0.3, 0.025, 0.012, 2).translate(0, 0.15, 0).rotateX(-0.42).translate(0, 0.02, -0.07)).rotateY(0.38).translate(-0.34, seatTop, 0.1),\n        takeaway(0.42, seatTop + 0.13, 0.1, 0.62), steam(0.34).translate(0.42, seatTop + 0.33, 0.1)).rotateX(0.16);\n    } },\n  // \uc5ec\ud589 \uac00\ubc29: a soft suitcase with straps, a handle and a sticker\n  { key: 'coffee+train+page', name: '\uc5ec\ud589 \uac00\ubc29', body: '#fff4ec', rim: '#eedcd4', glowA: '#c9784a', posA: 0.3, radA: 0.5, glowB: '#9fc2ff', posB: 0.82, radB: 0.35,\n    shape: () => merge(\n      part((x, y, z) => roundBox(x, y, z, 0.68, 0.5, 0.26, 0.2), [0, 0, 0]),\n      new THREE.TorusGeometry(0.2, 0.05, 14, 40, Math.PI).translate(0, 0.5, 0),\n      rbox(0.1, 1.03, 0.56, 0.05, 3).translate(-0.36, 0, 0), rbox(0.1, 1.03, 0.56, 0.05, 3).translate(0.36, 0, 0),\n      part((x, y, z) => sph(x, y, z, -0.04, 0.08, 0.27, 0.14, 1, 0.22), [-0.04, 0.08, 0.27], [50, 36]),\n      ...[[-0.5, 0.15], [0.5, 0.15], [-0.5, -0.15], [0.5, -0.15]].map(([wx, wz]) => new THREE.SphereGeometry(0.07, 20, 14).translate(wx, -0.55, wz))) },\n  // \ucc45\uc0c1 \uc870\uba85: a desk lamp bent over a pool of warm light\n  { key: 'coffee+typing+page', name: '\ucc45\uc0c1 \uc870\uba85', body: '#fffaf0', rim: '#efe4d6', glowA: '#ffd99c', posA: 0.52, radA: 0.36, glowB: '#8fb0ff', posB: 0.1, radB: 0.45,\n    shape: () => merge(\n      part((x, y, z) => roundCyl(x, y + 0.85, z, 0.42, 0.07, 0.06), [0, -0.85, 0], [80, 50]),\n      new THREE.CapsuleGeometry(0.05, 0.62, 6, 14).rotateZ(0.39).translate(-0.135, -0.45, 0),\n      new THREE.SphereGeometry(0.085, 20, 14).translate(-0.27, -0.12, 0),\n      new THREE.CapsuleGeometry(0.05, 0.5, 6, 14).rotateZ(-0.9).translate(-0.035, 0.065, 0),\n      // the shade: half a dome, its open face turned down toward the desk\n      new THREE.SphereGeometry(0.32, 64, 32, 0, Math.PI * 2, 0, Math.PI / 2).rotateZ(0.594).translate(0.32, 0.28, 0),\n      new THREE.TorusGeometry(0.32, 0.035, 14, 80).rotateX(Math.PI / 2).rotateZ(0.594).translate(0.32, 0.28, 0),\n      new THREE.SphereGeometry(0.13, 24, 18).translate(0.32 + 0.56 * 0.07, 0.28 - 0.83 * 0.07, 0)) },\n  // \ud3b8\uc9c0: an envelope with its flap and a round seal\n  { key: 'train+typing+page', name: '\ud3b8\uc9c0', body: '#fff6fa', rim: '#f0dce6', glowA: '#ffb8dc', posA: 0.45, radA: 0.42, glowB: '#ffcf5e', posB: 0.85, radB: 0.35,\n    shape: () => shrinkWrap((x, y, z) => {\n      const body = slab(sdRoundRect2(x, y, 0.82, 0.54, 0.12), z, 0.06, 0.04);\n      const f2 = Math.max(y - 0.5, (-0.06 + 0.72 * Math.abs(x) - y) / 1.23) + 0.02;\n      const flap = slab(f2, z - 0.08, 0.025, 0.02);\n      return smin(smin(body, flap, 0.02), sph(x, y, z, 0, -0.04, 0.12, 0.13, 1, 0.45), 0.03);\n    }, { center: [0, 0, 0], seg: [180, 120] }).rotateZ(0.12).rotateX(0.22) },\n  // \uc7a0\ub4e0 \ub3c4\uc2dc: a small block of soft towers with lit windows, and a crescent moon\n  { key: 'coffee+train+typing+page', name: '\uc7a0\ub4e0 \ub3c4\uc2dc', body: '#f3f3ff', rim: '#d9dbf5', glowA: '#ffcf5e', posA: 0.45, radA: 0.45, glowB: '#6f7dff', posB: 0.92, radB: 0.4,\n    shape: () => {\n      const tower = (cx, w, h, dz) => { const cy = -0.62 + h; return part((x, y, z) => {\n        let d = roundBox(x - cx, y - cy, z - dz, w, h, 0.26, 0.14);\n        for (let r = 0; r < Math.floor(h / 0.2); r++) for (const wx of [-w * 0.42, w * 0.42])\n          d = smax(d, -roundBox(x - cx - wx, y - (cy + h - 0.2 - r * 0.24), z - dz - 0.28, 0.05, 0.06, 0.06, 0.03), 0.02);\n        return d;\n      }, [cx, cy, dz]); };\n      return merge(part((x, y, z) => roundBox(x, y + 0.7, z, 0.98, 0.08, 0.5, 0.07), [0, -0.7, 0], [100, 60]),\n        tower(-0.52, 0.26, 0.32, 0.04), tower(0.04, 0.29, 0.5, -0.06), tower(0.56, 0.24, 0.24, 0.08),\n        part((x, y, z) => smax(sph(x, y, z, 0.62, 0.66, 0, 0.27, 1, 0.6), -sph(x, y, z, 0.74, 0.75, 0, 0.23, 1, 0.9), 0.03), [0.5, 0.56, 0], [90, 70]));\n    } },\n];\n\n/* ---------- NOISE combinations: what two or more white-noise sounds become ----------\n   Keys list the sounds in NEW_TRACKS order (fan, cabin, static, hum). Needs new-objects.js and city-combos.js (helpers) loaded first.\n   Each one is a single object whose parts say which sounds made it. */\n// a thin stream of air, tapering as it drifts\nconst air = (pts, w = 0.03) => taperTube(pts, (u) => 0.006 + w * (1 - u) * Math.min(1, u / 0.15 + 0.3), { T: 120, R: 14 });\n// a disc facing the viewer (axis along z)\nconst discZ = (cx, cy, cz, r, h, rr) => part((x, y, z) => roundCyl(x - cx, z - cz, y - cy, r, h, rr), [cx, cy, cz], [70, 50]);\n\nconst NOISE_COMBOS = [\n  // \uba38\ub9ac \uc704 \uc1a1\ud48d\uad6c: the panel above an airplane seat, two air nozzles and a reading light, air drifting down\n  { key: 'fan+cabin', name: '\uba38\ub9ac \uc704 \uc1a1\ud48d\uad6c', body: '#f2f8ff', rim: '#d6e6f4', glowA: '#6fdcff', posA: 0.55, radA: 0.42, glowB: '#ff9474', posB: 0.85, radB: 0.3,\n    shape: () => merge(\n      rbox(1.6, 0.66, 0.2, 0.12, 5).translate(0, 0.32, 0),\n      ...[-0.42, 0.02].flatMap((nx) => [discZ(nx, 0.32, 0.1, 0.19, 0.04, 0.03), new THREE.SphereGeometry(0.1, 28, 20).scale(1, 1, 0.8).translate(nx, 0.3, 0.17)]),\n      discZ(0.5, 0.32, 0.1, 0.13, 0.03, 0.02), new THREE.SphereGeometry(0.07, 24, 16).scale(1, 1, 0.5).translate(0.5, 0.32, 0.14),\n      air([[-0.42, 0.18, 0.22], [-0.36, -0.12, 0.34], [-0.46, -0.42, 0.4], [-0.38, -0.7, 0.42]]),\n      air([[0.02, 0.18, 0.22], [0.1, -0.1, 0.32], [0.0, -0.38, 0.38], [0.08, -0.62, 0.4]]),\n      air([[-0.2, 0.18, 0.2], [-0.16, -0.2, 0.3], [-0.24, -0.5, 0.34]], 0.022)).rotateX(-0.2) },\n  // \uc2a4\ud53c\ucee4: a round cone that pushes air and plays noise, waves drifting off it\n  { key: 'fan+static', name: '\uc2a4\ud53c\ucee4', body: '#f1fbff', rim: '#d3ecf2', glowA: '#6fe6dc', posA: 0.4, radA: 0.45, glowB: '#ff9bd4', posB: 0.82, radB: 0.32,\n    shape: () => merge(\n      rbox(0.95, 1.3, 0.5, 0.22, 6),\n      new THREE.TorusGeometry(0.31, 0.05, 16, 64).translate(0, -0.18, 0.26), new THREE.TorusGeometry(0.17, 0.04, 14, 48).translate(0, -0.18, 0.26),\n      new THREE.SphereGeometry(0.09, 24, 16).scale(1, 1, 0.55).translate(0, -0.18, 0.27),\n      new THREE.TorusGeometry(0.1, 0.03, 12, 40).translate(0, 0.36, 0.26), new THREE.SphereGeometry(0.05, 18, 12).scale(1, 1, 0.6).translate(0, 0.36, 0.27),\n      ...[0.62, 0.8].map((r, i) => new THREE.TorusGeometry(r, 0.025, 10, 48, 1.1).rotateZ(-0.55).translate(0, -0.18, 0.18 - i * 0.04))) },\n  // \uc5d0\uc5b4\ucee8: a soft wall unit, its louver tilted open and cool air flowing out\n  { key: 'fan+hum', name: '\uc5d0\uc5b4\ucee8', body: '#f0fbff', rim: '#d2ebf4', glowA: '#9fe2ff', posA: 0.6, radA: 0.45, glowB: '#b9ffe2', posB: 0.15, radB: 0.4,\n    shape: () => merge(\n      rbox(1.7, 0.52, 0.42, 0.2, 6).translate(0, 0.3, 0),\n      rbox(1.42, 0.05, 0.2, 0.025, 3).rotateX(0.65).translate(0, 0.06, 0.2),\n      new THREE.SphereGeometry(0.035, 16, 12).translate(0.62, 0.38, 0.215),\n      ...[-0.5, -0.1, 0.3].map((ax, i) => air([[ax, 0.02, 0.26], [ax + 0.06, -0.24, 0.42], [ax - 0.04, -0.5, 0.5], [ax + 0.05, -0.76 + i * 0.04, 0.52]]))) },\n  // \uae30\ub0b4 \ud5e4\ub4dc\ud3f0: soft over-ear headphones from the seat pocket, the cable curling down\n  { key: 'cabin+static', name: '\uae30\ub0b4 \ud5e4\ub4dc\ud3f0', body: '#f7f3ff', rim: '#ded8f3', glowA: '#ff9bd4', posA: 0.3, radA: 0.42, glowB: '#8db6ff', posB: 0.85, radB: 0.4,\n    shape: () => merge(\n      new THREE.TorusGeometry(0.6, 0.07, 18, 90, Math.PI).translate(0, 0.02, 0),\n      ...[-1, 1].flatMap((s) => [\n        part((x, y, z) => roundCyl(y + 0.08, (x - s * 0.62) * s, z, 0.26, 0.11, 0.08), [s * 0.62, -0.08, 0], [90, 60]),\n        new THREE.TorusGeometry(0.19, 0.075, 14, 48).rotateY(Math.PI / 2).translate(s * 0.48, -0.08, 0)]),\n      air([[-0.66, -0.32, 0.05], [-0.6, -0.55, 0.15], [-0.3, -0.62, 0.25], [-0.05, -0.7, 0.3]], 0.024),\n      new THREE.CapsuleGeometry(0.03, 0.08, 6, 12).rotateZ(Math.PI / 2).translate(0.02, -0.71, 0.3)) },\n  // \uae30\ub0b4 \uce74\ud2b8: the drinks trolley, a door with a latch, two paper cups on top, small wheels\n  { key: 'cabin+hum', name: '\uae30\ub0b4 \uce74\ud2b8', body: '#f4f6ff', rim: '#d9def2', glowA: '#fff0a8', posA: 0.55, radA: 0.45, glowB: '#8db6ff', posB: 0.15, radB: 0.4,\n    shape: () => merge(\n      rbox(0.82, 1.1, 0.7, 0.12, 6).translate(0, -0.05, 0),\n      rbox(0.68, 0.84, 0.05, 0.05, 3).translate(0, -0.08, 0.36),\n      new THREE.CapsuleGeometry(0.035, 0.6, 6, 12).rotateZ(Math.PI / 2).translate(0, 0.42, 0.4),\n      discZ(0.22, -0.08, 0.39, 0.05, 0.02, 0.015),\n      ...[-0.17, 0.15].map((cx) => smooth(new THREE.CylinderGeometry(0.085, 0.065, 0.17, 30, 2).translate(cx, 0.6, 0.02))),\n      ...[[-0.3, 0.24], [0.3, 0.24], [-0.3, -0.24], [0.3, -0.24]].map(([wx, wz]) => part((x, y, z) => roundCyl(y + 0.66, x - wx, z - wz, 0.06, 0.03, 0.02), [wx, -0.66, wz], [40, 30]))) },\n  // \ube0c\ub77c\uc6b4\uad00 TV: a soft CRT with a bulging screen, two knobs and rabbit-ear antennas\n  { key: 'static+hum', name: '\ube0c\ub77c\uc6b4\uad00 TV', body: '#f4f8ff', rim: '#d8e4f2', glowA: '#6fe6dc', posA: 0.48, radA: 0.42, glowB: '#fff0a8', posB: 0.85, radB: 0.32,\n    shape: () => merge(\n      rbox(1.24, 0.96, 0.8, 0.26, 6).translate(0, -0.1, 0),\n      // the screen: a rounded rectangle bulging gently forward\n      part((x, y, z) => slab(sdRoundRect2(x + 0.12, y + 0.08, 0.36, 0.3, 0.13), z - 0.4 - 0.04 * (1 - Math.min(1, Math.hypot((x + 0.12) / 0.36, (y + 0.08) / 0.3))), 0.04, 0.035), [-0.12, -0.08, 0.41], [100, 80]),\n      ...[0.06, -0.2].map((ky) => new THREE.SphereGeometry(0.065, 22, 16).scale(1, 1, 0.7).translate(0.44, ky, 0.41)),\n      ...[-0.4, 0.4].map((t) => new THREE.CapsuleGeometry(0.025, 0.6, 6, 12).translate(0, 0.3, 0).rotateZ(t).translate(0, 0.38, -0.05)),\n      ...[-0.4, 0.4].map((t) => new THREE.SphereGeometry(0.06, 18, 12).translate(-Math.sin(t) * 0.66, 0.38 + Math.cos(t) * 0.66, -0.05)),\n      ...[-0.38, 0.38].map((fx) => new THREE.SphereGeometry(0.07, 18, 12).scale(1, 0.6, 1).translate(fx, -0.6, 0.1))) },\n  // \ud504\ub85c\ud3a0\ub7ec \ube44\ud589\uae30: a soft little plane: propeller (air), cabin windows (flight), an antenna (radio)\n  { key: 'fan+cabin+static', name: '\ud504\ub85c\ud3a0\ub7ec \ube44\ud589\uae30', body: '#f6f5ff', rim: '#ddd9f3', glowA: '#ff9474', posA: 0.4, radA: 0.45, glowB: '#6fdcff', posB: 0.82, radB: 0.35,\n    shape: () => merge(\n      new THREE.CapsuleGeometry(0.27, 1.0, 12, 32).rotateZ(Math.PI / 2),\n      rbox(0.44, 0.07, 1.7, 0.035, 4).translate(0.06, -0.08, 0),\n      rbox(0.28, 0.34, 0.06, 0.03, 3).translate(-0.66, 0.24, 0), rbox(0.22, 0.05, 0.6, 0.025, 3).translate(-0.66, 0.06, 0),\n      ...[-0.2, 0.05, 0.3].map((wx) => new THREE.SphereGeometry(0.06, 18, 12).scale(1, 1, 0.4).translate(wx, 0.08, 0.26)),\n      new THREE.SphereGeometry(0.09, 22, 16).translate(0.8, 0, 0),\n      rbox(0.04, 0.72, 0.12, 0.02, 3).rotateX(0.35).translate(0.86, 0, 0),\n      new THREE.CapsuleGeometry(0.018, 0.26, 6, 10).rotateZ(-0.25).translate(0.18, 0.4, 0), new THREE.SphereGeometry(0.04, 16, 12).translate(0.21, 0.55, 0)).rotateY(-0.7).rotateX(0.42).rotateZ(0.1) },\n  // \uc218\uba74 \ucea1\uc290: a sleeping pod, its round door window glowing, a small air vent at its side\n  { key: 'fan+cabin+hum', name: '\uc218\uba74 \ucea1\uc290', body: '#f5f6ff', rim: '#dbdef3', glowA: '#fff0a8', posA: 0.52, radA: 0.42, glowB: '#8db6ff', posB: 0.12, radB: 0.4,\n    shape: () => merge(\n      new THREE.CapsuleGeometry(0.46, 0.95, 14, 40).rotateZ(Math.PI / 2).translate(0, 0.05, 0),\n      new THREE.TorusGeometry(0.25, 0.055, 16, 64).translate(0.12, 0.05, 0.43),\n      smooth(new THREE.CylinderGeometry(0.22, 0.22, 0.03, 48, 1).rotateX(Math.PI / 2).translate(0.12, 0.05, 0.41)),\n      ...[0.18, 0.05, -0.08].map((vy) => new THREE.CapsuleGeometry(0.02, 0.14, 6, 10).rotateZ(Math.PI / 2).translate(-0.48, vy, 0.38)),\n      rbox(1.5, 0.06, 0.8, 0.03, 3).translate(0, -0.47, 0)) },\n  // \ubc31\uc0c9\uc18c\uc74c\uae30: the white noise machine: a soft round puck, rings across its top, a ring of light at its base\n  { key: 'fan+static+hum', name: '\ubc31\uc0c9\uc18c\uc74c\uae30', body: '#f4fbff', rim: '#d6ecf3', glowA: '#6fe6dc', posA: 0.7, radA: 0.42, glowB: '#ff9bd4', posB: 0.15, radB: 0.4,\n    shape: () => merge(\n      part((x, y, z) => smin(roundCyl(x, y + 0.02, z, 0.62, 0.26, 0.22), sph(x, y, z, 0, 0.14, 0, 0.56, 0.32), 0.08), [0, 0, 0], [140, 100]),\n      ...[0.14, 0.27, 0.4].map((r, i) => new THREE.TorusGeometry(r, 0.02, 10, 64).rotateX(Math.PI / 2).translate(0, 0.32 - i * 0.025, 0)),\n      // a band of soft light around its side\n      new THREE.TorusGeometry(0.63, 0.03, 12, 96).rotateX(Math.PI / 2).translate(0, -0.08, 0)).rotateX(0.24) },\n  // \uc778\uacf5\uc704\uc131: a small satellite, its body hums, its dish listens for static, its panels like little cabin wings\n  { key: 'cabin+static+hum', name: '\uc778\uacf5\uc704\uc131', body: '#f5f5ff', rim: '#dcdcf4', glowA: '#8db6ff', posA: 0.45, radA: 0.5, glowB: '#fff0a8', posB: 0.82, radB: 0.32,\n    shape: () => merge(\n      rbox(0.5, 0.52, 0.5, 0.12, 5),\n      ...[-1, 1].flatMap((s) => [new THREE.CapsuleGeometry(0.025, 0.18, 6, 10).rotateZ(Math.PI / 2).translate(s * 0.37, 0, 0), rbox(0.8, 0.04, 0.44, 0.02, 3).translate(s * 0.86, 0, 0),\n        ...[-0.2, 0.2].map((gx) => rbox(0.012, 0.05, 0.44, 0.006, 1).translate(s * 0.86 + gx, 0, 0))]),\n      new THREE.SphereGeometry(0.3, 48, 20, 0, Math.PI * 2, 0, Math.PI / 2.6).rotateX(Math.PI).rotateZ(-0.6).translate(0.12, 0.62, 0),\n      new THREE.CapsuleGeometry(0.02, 0.3, 6, 10).rotateZ(-0.6).translate(0.04, 0.42, 0),\n      new THREE.CapsuleGeometry(0.02, 0.32, 6, 10).translate(-0.12, 0.42, 0.1), new THREE.SphereGeometry(0.04, 14, 10).translate(-0.12, 0.6, 0.1)).rotateZ(0.18).rotateX(0.2) },\n  // \uc5f4\uae30\uad6c: a hot air balloon: the envelope swells with air (fan), the basket is its cabin, the burner hums, a little radio antenna rides along\n  { key: 'fan+cabin+static+hum', name: '\uc5f4\uae30\uad6c', body: '#f8f5ff', rim: '#e2dbf3', glowA: '#ffb07a', posA: 0.22, radA: 0.34, glowB: '#ff9bd4', posB: 0.72, radB: 0.45,\n    shape: () => {\n      const bx = 0.16, bt = -0.82;   // basket centre and the top of the basket\n      // the envelope: a teardrop whose eight gores swell out softly\n      const gore = (y) => Math.min(1, Math.max(0, (y + 0.1) / 0.4)) * Math.min(1, Math.max(0, (0.95 - y) / 0.4));   // fades out at the neck and at the crown\n      const envelope = shrinkWrap((x, y, z) => roundCone(x, y, z, 0, -0.2, 0.17, 0.6, 0.62) - 0.02 * Math.cos(8 * Math.atan2(z, x)) * gore(y), { center: [0, 0.3, 0], seg: [180, 140] });\n      const ropes = [[-1, -1], [1, -1], [-1, 1], [1, 1]].map(([sx, sz]) => {\n        const a = V3(sx * 0.12, -0.3, sz * 0.12), b = V3(bx * 0 + sx * 0.15, bt + 0.02, sz * 0.15), m = a.clone().add(b).multiplyScalar(0.5), d = b.clone().sub(a);\n        return new THREE.CapsuleGeometry(0.012, d.length(), 4, 8).applyQuaternion(new THREE.Quaternion().setFromUnitVectors(V3(0, 1, 0), d.normalize())).translate(m.x, m.y, m.z);\n      });\n      return merge(envelope, ...ropes,\n        rbox(0.36, 0.26, 0.36, 0.07, 4).translate(0, bt - 0.13, 0),                              // the basket\n        smooth(new THREE.CylinderGeometry(0.06, 0.08, 0.1, 24, 1).translate(0, -0.4, 0)),          // the burner\n        new THREE.CapsuleGeometry(0.012, 0.22, 4, 8).rotateZ(-0.3).translate(0.21, bt + 0.08, 0.12), new THREE.SphereGeometry(0.03, 12, 8).translate(0.25, bt + 0.2, 0.12),\n        cloudGeo(0.2).translate(-0.62, -0.62, 0.1), cloudGeo(0.14).translate(0.66, -0.2, -0.1));\n    } },\n  // (\uad6c\ub984 \uce68\ub300, the earlier all-four object, kept for reference)\n  { key: 'fan+cabin+static+hum__bed', name: '\uad6c\ub984 \uce68\ub300', body: '#f8f6ff', rim: '#e0dbf3', glowA: '#ff9bd4', posA: 0.6, radA: 0.42, glowB: '#8db6ff', posB: 0.15, radB: 0.45, skip: true,\n    shape: () => merge(\n      // a thick cloud for a mattress\n      shrinkWrap(blobs([[0, -0.22, 0, 0.55, 0.8, 0.85], [-0.52, -0.28, 0.04, 0.44, 0.78, 0.85], [0.52, -0.28, 0, 0.46, 0.78, 0.85], [-0.24, -0.1, 0.14, 0.4, 0.8, 0.85], [0.28, -0.1, -0.12, 0.42, 0.8, 0.85], [0.84, -0.36, 0.02, 0.3, 0.8, 0.85], [-0.84, -0.36, 0, 0.28, 0.8, 0.85]], 0.22), { center: [0, -0.24, 0], seg: [180, 130] }),\n      // a fluffy pillow on the left, a blanket folded back over the rest\n      part((x, y, z) => roundBox(x + 0.46, y - 0.14, z + 0.02, 0.3, 0.13, 0.24, 0.13), [-0.46, 0.14, -0.02], [80, 60]),\n      rbox(0.94, 0.08, 0.7, 0.04, 4).translate(0.28, 0.08, 0.06),\n      rbox(0.94, 0.09, 0.2, 0.045, 3).translate(0.28, 0.15, -0.24)).rotateX(0.26)\n    },\n];\n\nfunction build(key) {\n  if (!key.includes('+')) return (SINGLE[key] || NEW_SHAPES[key])();\n  const c = COMBO_SHAPES[key] || (CITY_COMBOS.find((x) => x.key === key) || NOISE_COMBOS.find((x) => x.key === key && !x.skip)).shape;\n  return c();\n}\nself.onmessage = ({ data }) => {\n  try {\n    const g = build(data.key), pos = g.attributes.position.array, nor = g.attributes.normal.array, idx = g.index ? g.index.array : null;\n    const tr = [pos.buffer, nor.buffer]; if (idx) tr.push(idx.buffer);\n    self.postMessage({ key: data.key, pos, nor, idx }, tr);\n  } catch (e) { self.postMessage({ key: data.key, error: String(e) }); }\n};\n";
+const { sound } = (() => {
+/* ONDA sound engine: every sound is synthesised live with Web Audio, no audio files.
+     sound.init()                    call from a user gesture
+     sound.setLevel(id, 0..1)        0 = off
+     sound.setTexture(id, 0|1|2)     the 소리 결 of that sound
+     sound.fadeTo(0..1, seconds)     master level, used by the sleep timer and pause
+   Each sound is built on first use, so a theme you never open costs nothing. */
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const rand = (a, b) => a + Math.random() * (b - a);
+const OUT = 0.34;
+
+let ctx = null, master = null, pinkBuf = null, brownBuf = null;
+const tracks = {};          // id -> { gain, apply(texture) }
+const levels = {}, textures = {};
+
+function buffers() {
+  const n = ctx.sampleRate * 4;
+  pinkBuf = ctx.createBuffer(1, n, ctx.sampleRate); brownBuf = ctx.createBuffer(1, n, ctx.sampleRate);
+  const p = pinkBuf.getChannelData(0), br = brownBuf.getChannelData(0);
+  let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0, last = 0;
+  for (let i = 0; i < n; i++) {
+    const w = Math.random() * 2 - 1;
+    b0 = 0.99886 * b0 + w * 0.0555179; b1 = 0.99332 * b1 + w * 0.0750759; b2 = 0.969 * b2 + w * 0.153852;
+    b3 = 0.8665 * b3 + w * 0.3104856; b4 = 0.55 * b4 + w * 0.5329522; b5 = -0.7616 * b5 - w * 0.016898;
+    p[i] = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + w * 0.5362) * 0.08; b6 = w * 0.115926;
+    last = (last + 0.02 * w) / 1.02; br[i] = last * 3.2;
+  }
+}
+const src = (buf) => { const s = ctx.createBufferSource(); s.buffer = buf; s.loop = true; s.start(0, Math.random() * 3); return s; };
+const filt = (type, f, q = 1) => { const x = ctx.createBiquadFilter(); x.type = type; x.frequency.value = f; x.Q.value = q; return x; };
+const gain = (v) => { const g = ctx.createGain(); g.gain.value = v; return g; };
+const lfo = (hz, depth, target) => { const o = ctx.createOscillator(), g = gain(depth); o.frequency.value = hz; o.connect(g).connect(target); o.start(); return { o, g }; };
+const ramp = (param, v, t = 0.4) => param.setTargetAtTime(v, ctx.currentTime, t);
+// a short burst of filtered noise: the building block of crackles, clicks, page rustles and rail clacks
+function burst(out, { len = 0.04, decay = 0.006, type = 'highpass', f = 2000, q = 0.7, amp = 0.2, pan = 0 }) {
+  const t = ctx.currentTime, b = ctx.createBuffer(1, Math.max(1, ctx.sampleRate * len), ctx.sampleRate), d = b.getChannelData(0);
+  for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.exp(-i / (ctx.sampleRate * decay));
+  const s = ctx.createBufferSource(); s.buffer = b; let node = s.connect(filt(type, f, q)).connect(gain(amp));
+  if (ctx.createStereoPanner) { const p = ctx.createStereoPanner(); p.pan.value = pan; node = node.connect(p); }
+  node.connect(out); s.start(t);
+}
+function drop(out, { f = 2400, amp = 0.05, len = 0.07, pan = 0 }) {
+  const t = ctx.currentTime, env = gain(0), o = ctx.createOscillator();
+  env.gain.setValueAtTime(0, t); env.gain.linearRampToValueAtTime(amp, t + 0.002); env.gain.exponentialRampToValueAtTime(0.0001, t + len);
+  o.frequency.setValueAtTime(f, t); o.frequency.exponentialRampToValueAtTime(f * 0.6, t + len * 0.45);
+  let node = env; if (ctx.createStereoPanner) { const p = ctx.createStereoPanner(); p.pan.value = pan; env.connect(p); node = p; }
+  node.connect(out); o.connect(env); o.start(t); o.stop(t + len + 0.02);
+}
+// run fn on a jittered timer while the sound is audible
+function every(id, delay, fn) { (function loop() { if (levels[id] > 0) fn(); setTimeout(loop, delay()); })(); }
+
+const BUILD = {
+  fire(g) {
+    const bed = filt('bandpass', 450, 1.2), bg = gain(1); src(pinkBuf).connect(bed).connect(bg).connect(g);
+    let chance = 0.4;
+    every('fire', () => 100, () => { if (Math.random() < chance) burst(g, { f: 2200, amp: rand(0.12, 0.34), pan: rand(-0.3, 0.3) }); });
+    return (t) => { chance = [0.14, 0.4, 0.7][t]; ramp(bed.frequency, [340, 450, 640][t]); ramp(bg.gain, [0.7, 1, 1.35][t]); };
+  },
+  wave(g) {
+    const wf = filt('lowpass', 380), sw = gain(0.65); src(pinkBuf).connect(wf).connect(sw).connect(g);
+    const a = lfo(0.14, 220, wf.frequency), b = lfo(0.14, 0.32, sw.gain);
+    return (t) => { [a.o, b.o].forEach((o) => ramp(o.frequency, [0.22, 0.14, 0.08][t])); ramp(a.g.gain, [110, 220, 420][t]); ramp(b.g.gain, [0.14, 0.32, 0.46][t]); ramp(wf.frequency, [520, 380, 320][t]); };
+  },
+  wind(g) {
+    const wb = filt('bandpass', 520, 0.7), gust = gain(0.7); src(pinkBuf).connect(wb).connect(gust).connect(g);
+    src(pinkBuf).connect(filt('highpass', 2500)).connect(gain(0.15)).connect(gust);
+    const a = lfo(0.07, 0.3, gust.gain), b = lfo(0.11, 180, wb.frequency);
+    return (t) => { ramp(a.o.frequency, [0.05, 0.07, 0.12][t]); ramp(a.g.gain, [0.18, 0.3, 0.45][t]); ramp(wb.frequency, [700, 520, 380][t]); };
+  },
+  rain(g) {
+    const hiss = gain(0.5); src(pinkBuf).connect(filt('highpass', 600)).connect(filt('lowpass', 2600)).connect(hiss).connect(g);
+    const drops = filt('lowpass', 5200); drops.connect(g); let rate = 1;
+    (function loop() { if (levels.rain > 0) drop(drops, { f: rand(1800, 3200), amp: 0.06 * rand(0.5, 1), pan: rand(-0.4, 0.4) }); setTimeout(loop, rand(60, 260) / (0.3 + levels.rain) / rate); })();
+    return (t) => { rate = [0.4, 1, 2.4][t]; ramp(hiss.gain, [0.28, 0.5, 0.85][t]); };
+  },
+  coffee(g) {
+    // the pour: a thin, bright trickle whose loudness flickers, plus single drops into the cup
+    const tr = filt('bandpass', 2100, 1.4), tg = gain(0.25), am = gain(0.5); src(pinkBuf).connect(tr).connect(am).connect(tg).connect(g);
+    lfo(7.5, 0.35, am.gain); const sweep = lfo(0.6, 500, tr.frequency);
+    let rate = 1;
+    every('coffee', () => rand(500, 1600) / rate, () => drop(g, { f: rand(900, 1400), amp: 0.08, len: 0.12, pan: rand(-0.15, 0.15) }));
+    return (t) => { rate = [0.6, 1, 1.6][t]; ramp(tg.gain, [0.04, 0.25, 0.55][t]); ramp(sweep.o.frequency, [0.3, 0.6, 1.1][t]); };
+  },
+  train(g) {
+    // far rumble and the da-dum of wheels over rail joints
+    const rum = gain(0.6), lp = filt('lowpass', 140); src(brownBuf).connect(lp).connect(rum).connect(g);
+    lfo(0.35, 0.12, rum.gain);
+    const clack = filt('lowpass', 420); const cg = gain(1); clack.connect(cg).connect(g);
+    let gap = 1.25;
+    every('train', () => gap * 1000, () => { burst(clack, { len: 0.12, decay: 0.03, type: 'lowpass', f: 300, amp: 0.5 }); setTimeout(() => burst(clack, { len: 0.12, decay: 0.03, type: 'lowpass', f: 300, amp: 0.42 }), 150); });
+    return (t) => { gap = [1.5, 1.25, 1.0][t]; ramp(clack.frequency, [240, 420, 700][t]); ramp(cg.gain, [0.45, 1, 1.5][t]); ramp(lp.frequency, [110, 140, 190][t]); };
+  },
+  typing(g) {
+    let rate = 1;
+    (function loop() {
+      if (levels.typing > 0) { burst(g, { len: 0.02, decay: 0.003, f: rand(1800, 3200), amp: rand(0.18, 0.3), pan: rand(-0.25, 0.25) }); drop(g, { f: rand(500, 700), amp: 0.025, len: 0.03 }); }
+      const pause = Math.random() < 0.08 ? rand(500, 1300) : rand(90, 230);   // short words, then a breath
+      setTimeout(loop, pause / rate);
+    })();
+    return (t) => { rate = [0.55, 1, 1.7][t]; };
+  },
+  page(g) {
+    let gap = 3.2;
+    every('page', () => rand(0.6, 1.4) * gap * 1000, () => {
+      const n = 3 + Math.floor(rand(0, 4));
+      for (let i = 0; i < n; i++) setTimeout(() => burst(g, { len: 0.18, decay: 0.05, type: 'bandpass', f: rand(2500, 5200), q: 0.8, amp: rand(0.06, 0.12), pan: rand(-0.3, 0.3) }), i * rand(30, 70));
+    });
+    src(pinkBuf).connect(filt('bandpass', 900, 0.5)).connect(gain(0.03)).connect(g);   // the quiet room
+    return (t) => { gap = [6, 3.2, 1.6][t]; };
+  },
+  fan(g) {
+    const bp = filt('bandpass', 800, 0.5), am = gain(0.8); src(pinkBuf).connect(bp).connect(am).connect(g);
+    const blade = lfo(7, 0.08, am.gain);
+    const motor = ctx.createOscillator(); motor.frequency.value = 58; const mg = gain(0.04); motor.connect(mg).connect(g); motor.start();
+    return (t) => { ramp(bp.frequency, [550, 800, 1150][t]); ramp(am.gain, [0.55, 0.8, 1.1][t]); ramp(blade.o.frequency, [5, 7, 10][t]); };
+  },
+  cabin(g) {
+    const lp = filt('lowpass', 350), lv = gain(1.1); src(brownBuf).connect(lp).connect(lv).connect(g);
+    src(pinkBuf).connect(filt('bandpass', 1200, 0.4)).connect(gain(0.05)).connect(g);   // the faint air of the vents
+    lfo(0.02, 40, lp.frequency);
+    return (t) => { ramp(lp.frequency, [220, 350, 520][t]); ramp(lv.gain, [0.8, 1.1, 1.4][t]); };
+  },
+  static(g) {
+    const bp = filt('bandpass', 3000, 0.7), sg = gain(0.55); src(pinkBuf).connect(bp).connect(sg).connect(g);
+    const tune = lfo(0.05, 900, bp.frequency);
+    let chance = 0.3;
+    every('static', () => 70, () => { if (Math.random() < chance) burst(g, { len: 0.01, decay: 0.0015, f: 4000, amp: rand(0.1, 0.22), pan: rand(-0.5, 0.5) }); });
+    return (t) => { chance = [0.08, 0.3, 0.6][t]; ramp(sg.gain, [0.35, 0.55, 0.8][t]); ramp(tune.g.gain, [400, 900, 1600][t]); };
+  },
+  hum(g) {
+    const h1 = ctx.createOscillator(), h2 = ctx.createOscillator(); h1.frequency.value = 55; h2.frequency.value = 110;
+    const hg = gain(0.12); h1.connect(hg); h2.connect(gain(0.4)).connect(hg); hg.connect(g); h1.start(); h2.start();
+    src(brownBuf).connect(filt('lowpass', 220)).connect(gain(0.5)).connect(g);
+    lfo(0.025, 0.05, hg.gain);   // the compressor slowly comes and goes
+    return (t) => { ramp(hg.gain, [0.07, 0.12, 0.2][t]); };
+  },
+};
+
+function ensure(id) {
+  if (!ctx || tracks[id] || !BUILD[id]) return;
+  const g = gain(0); g.connect(master);
+  const apply = BUILD[id](g);
+  tracks[id] = { g, apply }; apply(textures[id] ?? 1);
+}
+function update(id) { ensure(id); const t = tracks[id]; if (t) t.g.gain.setTargetAtTime((levels[id] || 0) * OUT, ctx.currentTime, 0.08); }
+
+const sound = {
+  get ready() { return !!ctx; },
+  init() {
+    if (ctx) { if (ctx.state === 'suspended') ctx.resume(); return; }
+    try {
+      ctx = new (window.AudioContext || window.webkitAudioContext)();
+      master = gain(1); master.connect(ctx.destination); buffers();
+      Object.keys(levels).forEach(update);
+    } catch (e) { ctx = null; }
+  },
+  setLevel(id, v) { levels[id] = clamp(v, 0, 1); if (ctx) update(id); },
+  setTexture(id, t) { textures[id] = t; if (tracks[id]) tracks[id].apply(t); },
+  texture(id) { return textures[id] ?? 1; },
+  fadeTo(v, seconds = 1) { if (!ctx) return; const p = master.gain, now = ctx.currentTime; p.cancelScheduledValues(now); p.setValueAtTime(p.value, now); p.linearRampToValueAtTime(v, now + seconds); },
+};
+return { sound };
+})();
+const { U, MO, reduceMotion, clamp, TRACKS, COMBOS, SINGLE, COMBO_SHAPES, DEFORM, NEW_TRACKS, NEW_SHAPES, CITY_COMBOS, NOISE_COMBOS, dreamMat } = (() => {
+/* ONDA shapes: the milky material and every object's geometry, for all three themes.
+   Built from 몽환 오브제/index.html (material, helpers, nature set) and 새 오브제/*.js (city and noise sets). */
+// mesh resolution: objects render small on a phone, so touch devices build lighter meshes
+const GEO_Q = matchMedia('(pointer: coarse)').matches ? 0.55 : 0.72;
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const MO = reduceMotion ? 0.3 : 1;
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const V2 = (x, y) => new THREE.Vector2(x, y), V3 = (x, y, z) => new THREE.Vector3(x, y, z);
+
+// The four sounds. Each object is a milky body with two soft lights inside it (pos = height 0..1, rad = size vs the object)
+const TRACKS = [
+  { id: 'fire', label: 'FIRE', ko: '모닥불', color: '#ff6a2b', body: '#fff3ea', rim: '#ffd8c6',
+    glowA: '#ff3b2f', posA: 0.66, radA: 0.4, glowB: '#ffc65a', posB: 0.28, radB: 0.55 },
+  { id: 'wave', label: 'WAVE', ko: '파도', color: '#1fa8e8', body: '#eef7ff', rim: '#cde2ff',
+    glowA: '#2fc2ff', posA: 0.35, radA: 0.55, glowB: '#a18aff', posB: 0.8, radB: 0.38 },
+  { id: 'wind', label: 'WIND', ko: '봄바람', color: '#46c983', body: '#f2fbf2', rim: '#d3f0dd',
+    glowA: '#3fdc98', posA: 0.55, radA: 0.5, glowB: '#fff07a', posB: 0.2, radB: 0.42 },
+  { id: 'rain', label: 'RAIN', ko: '빗소리', color: '#7088ff', body: '#f1f1ff', rim: '#d8dbff',
+    glowA: '#566bff', posA: 0.26, radA: 0.52, glowB: '#ff9bd4', posB: 0.72, radB: 0.3 },
+];
+// What two or more sounds become. Keys list the sounds in TRACKS order.
+const COMBOS = {
+  'fire+wave':      { name: '물안개', body: '#f6f3f8', rim: '#e2dcea', glowA: '#ffa985', posA: 0.2, radA: 0.46, glowB: '#a8e6ff', posB: 0.82, radB: 0.46 },
+  'fire+wind':      { name: '불씨', body: '#fff1e8', rim: '#f2d4c6', glowA: '#ff4a2b', posA: 0.16, radA: 0.42, glowB: '#ffc65a', posB: 0.78, radB: 0.42 },
+  'fire+rain':      { name: '꺼진 모닥불', body: '#f2eef2', rim: '#dcd6e2', glowA: '#ff5a3a', posA: 0.14, radA: 0.26, glowB: '#b8b2dc', posB: 0.72, radB: 0.5 },
+  'wave+wind':      { name: '물보라', body: '#effaff', rim: '#cfe9ff', glowA: '#38c8ff', posA: 0.32, radA: 0.5, glowB: '#86f0cf', posB: 0.86, radB: 0.36 },
+  'wave+rain':      { name: '빗방울 물결', body: '#eff2ff', rim: '#d3dbff', glowA: '#4d7bff', posA: 0.4, radA: 0.5, glowB: '#c5a8ff', posB: 0.82, radB: 0.35 },
+  'wind+rain':      { name: '비바람', body: '#f1f3ff', rim: '#d6dcff', glowA: '#7d8cff', posA: 0.72, radA: 0.5, glowB: '#7ef0b8', posB: 0.12, radB: 0.42 },
+  'fire+wave+wind': { name: '노을', body: '#fff3ee', rim: '#f2d6e6', glowA: '#ff6a3d', posA: 0.72, radA: 0.4, glowB: '#8a7dff', posB: 0.16, radB: 0.5 },
+  'fire+wave+rain': { name: '온천', body: '#f4f6ff', rim: '#dbe3f7', glowA: '#5fd8ff', posA: 0.25, radA: 0.5, glowB: '#ffb09a', posB: 0.82, radB: 0.4 },
+  'fire+wind+rain': { name: '무지개', body: '#fbf8ff', rim: '#e8e0f7', glowA: '#ffd1e6', posA: 0.15, radA: 0.3, glowB: '#c9e6ff', posB: 0.15, radB: 0.3, rainbow: 1 },
+  'wave+wind+rain': { name: '폭풍', body: '#eef0ff', rim: '#cfd4f5', glowA: '#4f55ff', posA: 0.5, radA: 0.38, glowB: '#6fe0ff', posB: 0.2, radB: 0.6 },
+  'fire+wave+wind+rain': { name: '작은 행성', body: '#f7f4ff', rim: '#dcd9f2', glowA: '#ff8a5a', posA: 0.72, radA: 0.45, glowB: '#4f9dff', posB: 0.32, radB: 0.45 },
+};
+
+
+/* ---------- Material: a milky, velvet body lit from inside ----------
+   The skin is near white and matte. Two soft lights inside show through it, strongest where the body is thick
+   (facing you) and fading toward the edges. The silhouette itself fades out, so every shape dissolves into the air.
+   The rainbow form colours its arc in bands instead. */
+const U = { time: { value: 0 }, dark: { value: 0 } };
+function dreamMat(t, geo, { deform = '', amp, hit }) {
+  const box = geo.boundingBox, bs = geo.boundingSphere, h = box.max.y - box.min.y;
+  const cx = (box.min.x + box.max.x) / 2, cz = (box.min.z + box.max.z) / 2 + bs.radius * 0.12;
+  return new THREE.ShaderMaterial({
+    transparent: true, depthWrite: false,
+    uniforms: {
+      uTime: U.time, uDark: U.dark, uAmp: amp, uHit: hit, uRainbow: { value: t.rainbow || 0 },
+      uY: { value: V2(box.min.y, box.max.y) },
+      uBody: { value: new THREE.Color(t.body) }, uRim: { value: new THREE.Color(t.rim) },
+      uGA: { value: new THREE.Color(t.glowA) }, uGB: { value: new THREE.Color(t.glowB) },
+      uPA: { value: V3(cx, box.min.y + h * t.posA, cz) }, uPB: { value: V3(cx, box.min.y + h * t.posB, cz) },
+      uRA: { value: bs.radius * t.radA * 1.4 }, uRB: { value: bs.radius * t.radB * 1.4 },
+    },
+    vertexShader: `uniform float uTime; uniform float uAmp; uniform float uHit; uniform vec2 uY;
+      varying vec3 vP; varying vec3 vN; varying vec3 vV;
+      void main() {
+        vec3 transformed = position; vec3 objectNormal = normal;
+        float hgt = clamp((position.y - uY.x) / (uY.y - uY.x), 0.0, 1.0);
+        ${deform}
+        // soft wobble after a merge, like a balloon settling
+        float jelly = sin(position.y * 5.0 + uTime * 9.0) * 0.6 + sin(position.x * 4.0 - uTime * 7.0) * 0.4 + sin(position.z * 4.5 + uTime * 8.0) * 0.3;
+        transformed += objectNormal * jelly * uHit * 0.06;
+        vP = position;
+        vec4 mv = modelViewMatrix * vec4(transformed, 1.0);
+        vV = -mv.xyz; vN = normalize(normalMatrix * objectNormal);
+        gl_Position = projectionMatrix * mv;
+      }`,
+    fragmentShader: `uniform vec3 uBody; uniform vec3 uRim; uniform vec3 uGA; uniform vec3 uGB; uniform vec3 uPA; uniform vec3 uPB;
+      uniform float uRA; uniform float uRB; uniform float uDark; uniform float uRainbow;
+      varying vec3 vP; varying vec3 vN; varying vec3 vV;
+      vec3 hsv2rgb(vec3 c) { vec3 p = abs(fract(c.xxx + vec3(0.0, 2.0 / 3.0, 1.0 / 3.0)) * 6.0 - 3.0); return c.z * mix(vec3(1.0), clamp(p - 1.0, 0.0, 1.0), c.y); }
+      void main() {
+        vec3 n = normalize(vN), v = normalize(vV);
+        float facing = clamp(dot(n, v), 0.0, 1.0);
+        float lit = 0.66 + 0.24 * clamp(dot(n, normalize(vec3(-0.5, 0.8, 0.6))), 0.0, 1.0);   // one wide, soft key light
+        vec3 col = mix(uRim, uBody, smoothstep(0.0, 0.7, facing)) * lit * mix(1.0, 0.34, uDark);
+        float depth = mix(0.3, 1.0, facing);   // the inner light shows most through the thick middle
+        if (uRainbow > 0.5) {
+          float band = clamp((length(vP.xy) - 0.76) / 0.48, 0.0, 1.0);
+          col = mix(col, hsv2rgb(vec3(0.84 - band * 0.84, 0.5, 1.0)) * mix(1.0, 0.7, uDark), 0.8 * depth * step(0.0, vP.y + 0.05));
+        }
+        float a = exp(-pow(distance(vP, uPA) / uRA, 2.0)) * depth;
+        float b = exp(-pow(distance(vP, uPB) / uRB, 2.0)) * depth;
+        col = mix(col, uGA, a * 0.95); col = mix(col, uGB, b * 0.9);
+        col += (uGA * a + uGB * b) * mix(0.06, 0.14, uDark);
+        float alpha = smoothstep(0.02, 0.55, facing);   // the silhouette dissolves instead of ending in a hard edge
+        gl_FragColor = vec4(col, alpha);
+        #include <colorspace_fragment>
+      }`,
+  });
+}
+
+/* ---------- Geometry helpers: soft solids shrink-wrapped from signed distance fields ---------- */
+function editVerts(g, fn) { const p = g.attributes.position, v = V3(); for (let i = 0; i < p.count; i++) { v.fromBufferAttribute(p, i); fn(v, i); p.setXYZ(i, v.x, v.y, v.z); } p.needsUpdate = true; return g; }
+function smooth(g) { g.deleteAttribute('uv'); g.deleteAttribute('normal'); const o = mergeVertices(g, 1e-4); o.computeVertexNormals(); return o; }
+function merge(...gs) { return mergeGeometries(gs.map((g) => { if (g.attributes.uv) g.deleteAttribute('uv'); if (g.attributes.uv1) g.deleteAttribute('uv1'); return g; })); }
+const smin = (a, b, k) => { const h = Math.max(k - Math.abs(a - b), 0) / k; return Math.min(a, b) - h * h * k * 0.25; };
+const sph = (x, y, z, cx, cy, cz, r, sy = 1, sz = 1) => Math.hypot(x - cx, (y - cy) / sy, (z - cz) / sz) - r;
+const blobs = (list, k) => (x, y, z) => { let d = 1e9; for (const b of list) d = smin(d, sph(x, y, z, ...b), k); return d; };
+// iq's round cone: sphere r1 at the base, sphere r2 at height h, tilted by `tilt` around z
+function roundCone(x, y, z, bx, by, r1, r2, h, tilt = 0, zs = 1) {
+  const px = x - bx, py = y - by, c = Math.cos(tilt), s = Math.sin(tilt);
+  const rx = px * c + py * s, ry = -px * s + py * c, rz = z / zs;
+  const qx = Math.hypot(rx, rz), qy = ry, b = (r1 - r2) / h, a = Math.sqrt(1 - b * b), k = -b * qx + a * qy;
+  if (k < 0) return Math.hypot(qx, qy) - r1;
+  if (k > a * h) return Math.hypot(qx, qy - h) - r2;
+  return qx * a + qy * b - r1;
+}
+function shrinkWrap(sdf, { center = [0, 0, 0], seg = [150, 110], rMax = 2.6 } = {}) {
+  const g = new THREE.SphereGeometry(1, Math.max(24, Math.round(seg[0] * GEO_Q)), Math.max(16, Math.round(seg[1] * GEO_Q))), c = V3(...center), d = V3();
+  const f = (t) => sdf(c.x + d.x * t, c.y + d.y * t, c.z + d.z * t);
+  editVerts(g, (v) => {
+    d.copy(v).normalize();
+    let t = rMax, s = f(t);
+    while (t > 0 && s > 0) { t -= Math.max(s * 0.8, 0.003); s = f(t); }   // outermost surface along the ray
+    let lo = Math.max(t, 0), hi = lo + 0.02;
+    for (let i = 0; i < 14; i++) { const m = (lo + hi) / 2; if (f(m) < 0) lo = m; else hi = m; }
+    v.copy(d).multiplyScalar(lo).add(c);
+  });
+  return smooth(g);
+}
+// a tube along a path whose thickness follows radius(u), u = 0..1 from start to end
+function taperTube(points, radius, { T = 260, R = 30, zs = 1.3 } = {}) {
+  T = Math.max(40, Math.round(T * GEO_Q)); R = Math.max(10, Math.round(R * GEO_Q));
+  const path = new THREE.CatmullRomCurve3(points.map((p) => V3(...p)));
+  const g = new THREE.TubeGeometry(path, T, 1, R, false), c = V3();
+  editVerts(g, (v, k) => { const u = Math.floor(k / (R + 1)) / T; path.getPointAt(u, c); v.sub(c).multiplyScalar(radius(u)); v.z *= zs; v.add(c); });
+  return smooth(g);
+}
+const cap = (u, a, b) => Math.sqrt(Math.max(0, 1 - Math.pow(Math.max(0, u - a) / (1 - a), 2))) * Math.min(1, u / b);   // round ends
+
+/* ---------- The four sounds ---------- */
+function waveGeo(stretch = 1) {
+  const s = new THREE.Shape();
+  s.moveTo(-1.14, -0.4); s.lineTo(0.85, -0.42);
+  s.splineThru([V2(0.92, -0.3), V2(0.9, -0.1), V2(0.78, 0.1), V2(0.7, 0.32), V2(0.74, 0.52), V2(0.86, 0.6), V2(0.98, 0.56), V2(1.02, 0.44),
+    V2(1.14, 0.5), V2(1.16, 0.7), V2(1.04, 0.88), V2(0.82, 0.96), V2(0.56, 0.9), V2(0.3, 0.7), V2(0.0, 0.4), V2(-0.4, 0.12), V2(-0.82, -0.14), V2(-1.14, -0.33)]);
+  s.closePath();
+  const g = new THREE.ExtrudeGeometry(s, { depth: 0.28, bevelEnabled: true, bevelThickness: 0.32, bevelSize: 0.2, bevelSegments: 8, curveSegments: 8, steps: 2 });
+  editVerts(g, (v) => { v.x *= 0.82; v.y *= stretch; v.z -= 0.14; v.z *= 1 + 0.25 * Math.cos(v.x * 1.4); });
+  return smooth(g);
+}
+function cloudGeo(scale = 1) {
+  return shrinkWrap(blobs([[0, 0, 0, 0.52, 1, 0.8], [-0.56, -0.1, 0, 0.38, 1, 0.8], [0.58, -0.08, 0.02, 0.4, 1, 0.8],
+    [-0.22, 0.3, 0, 0.42, 1, 0.8], [0.26, 0.26, -0.02, 0.38, 1, 0.8], [0, -0.06, 0.18, 0.42, 1, 0.8]].map((b) => [b[0] * scale, b[1] * scale, b[2] * scale, b[3] * scale, b[4], b[5]]), 0.26 * scale));
+}
+const SINGLE = {
+  fire: () => shrinkWrap((x, y, z) => {
+    let d = roundCone(x, y, z, 0.04, -0.4, 0.5, 0.07, 1.45, 0.08, 0.9);
+    d = smin(d, roundCone(x, y, z, -0.3, -0.3, 0.3, 0.07, 0.98, 0.34, 0.9), 0.2);
+    return smin(d, roundCone(x, y, z, 0.34, -0.36, 0.28, 0.07, 0.8, -0.38, 0.9), 0.2);
+  }, { center: [0, -0.2, 0], seg: [170, 130] }),
+  rain: () => shrinkWrap((x, y, z) => roundCone(x, y, z, 0, -0.3, 0.6, 0.05, 1.05, -0.05), { center: [0, -0.25, 0], seg: [140, 110] }),
+  wind: () => {
+    const pts = [];
+    for (let i = 0; i <= 90; i++) { const u = i / 90, th = 0.5 + u * 2.2 * Math.PI, R = 0.1 + 0.6 * u; pts.push([R * Math.cos(th), R * Math.sin(th), 0]); }
+    const e = pts.at(-1);
+    for (let i = 1; i <= 24; i++) { const u = i / 24; pts.push([e[0] - u * 0.95, e[1] - 0.05 * u - 0.08 * Math.sin(u * Math.PI), 0]); }
+    return taperTube(pts, (u) => {
+      const sw = 0.72;
+      if (u < sw) return 0.035 + 0.2 * Math.pow(u / sw, 0.7) * Math.min(1, u / 0.04);
+      const k = (u - sw) / (1 - sw); return 0.235 * Math.sqrt(Math.max(0, 1 - k * k)) + 0.004;
+    }, { T: 360, R: 36, zs: 1.35 });
+  },
+  wave: () => waveGeo(),
+};
+
+/* ---------- What they become together ---------- */
+// an ellipsoid with radii a, b, c whose distance is scaled by its smallest radius, so tracing never steps past the surface
+const ell = (x, y, z, cx, cy, cz, a, b, c) => (Math.hypot((x - cx) / a, (y - cy) / b, (z - cz) / c) - 1) * Math.min(a, b, c);
+const COMBO_SHAPES = {
+  // 물안개: puffy clumps of mist lying low over a pool of water, small puffs drifting loose above
+  'fire+wave': () => merge(
+    shrinkWrap((x, y, z) => ell(x, y, z, 0, -0.62, 0, 0.92, 0.08, 0.8), { center: [0, -0.62, 0], seg: [150, 90] }),
+    shrinkWrap(blobs([[-0.66, -0.4, 0.04, 0.18, 0.75], [-0.42, -0.36, -0.04, 0.22, 0.75], [-0.14, -0.38, 0.06, 0.24, 0.75], [0.16, -0.36, -0.02, 0.23, 0.75],
+      [0.44, -0.38, 0.05, 0.2, 0.75], [0.68, -0.42, 0.0, 0.15, 0.75]], 0.14), { center: [0, -0.38, 0], seg: [170, 110] }),
+    shrinkWrap(blobs([[-0.36, -0.12, 0.0, 0.15, 0.8], [-0.14, -0.1, 0.03, 0.17, 0.8], [0.08, -0.13, -0.02, 0.13, 0.8]], 0.1), { center: [-0.14, -0.12, 0], seg: [120, 80] }),
+    shrinkWrap(blobs([[0.3, 0.1, 0.0, 0.11, 0.8], [0.46, 0.12, 0.02, 0.09, 0.8]], 0.08), { center: [0.38, 0.11, 0], seg: [90, 60] }),
+    new THREE.SphereGeometry(0.07, 24, 16).scale(1, 0.8, 1).translate(-0.04, 0.28, 0)).rotateX(0.24),
+  // 불씨: a small flame leaning in the wind, tiny sparks lifted off it and scattering
+  'fire+wind': () => merge(
+    SINGLE.fire().scale(0.34, 0.34, 0.34).rotateZ(-0.16).translate(-0.24, -0.5, 0),
+    ...[[0.06, -0.04, 0.034], [0.0, 0.1, 0.026], [0.18, 0.06, 0.03], [0.14, 0.22, 0.024], [0.3, 0.16, 0.022], [0.06, 0.3, 0.02],
+      [0.26, 0.34, 0.019], [0.42, 0.3, 0.018], [0.36, 0.46, 0.015], [0.18, 0.46, 0.014], [0.52, 0.48, 0.013], [0.46, 0.6, 0.011],
+      [0.3, 0.6, 0.01], [0.6, 0.62, 0.01], [0.56, 0.74, 0.008], [0.4, 0.76, 0.008]]
+      .map(([sx, sy, r], i) => new THREE.SphereGeometry(r, 14, 10).translate(sx - 0.08, sy - 0.06, 0.06 * ((i * 7) % 3) - 0.06))),
+  // 꺼진 모닥불: crossed charred logs on a heap of ash, the last embers, two thin curls of smoke
+  'fire+rain': () => merge(
+    shrinkWrap((x, y, z) => ell(x, y, z, 0, -0.66, 0, 0.66, 0.14, 0.5), { center: [0, -0.66, 0], seg: [140, 90] }),
+    ...[0.55, -0.55, 1.6].map((a, i) => new THREE.CapsuleGeometry(0.075, 0.68, 8, 18).rotateZ(Math.PI / 2).rotateZ(i === 2 ? 0 : 0.18 * Math.sign(a)).rotateY(a).translate(0, -0.5 + i * 0.06, 0)),
+    ...[[-0.14, -0.48, 0.2, 0.05], [0.12, -0.46, 0.16, 0.04], [0.02, -0.5, -0.14, 0.04]].map(([ex, ey, ez, r]) => new THREE.SphereGeometry(r, 18, 12).translate(ex, ey, ez)),
+    taperTube([[0.0, -0.36, 0.0], [0.12, -0.12, 0.02], [-0.06, 0.12, 0.0], [0.1, 0.36, -0.02], [-0.02, 0.62, 0.0]], (u) => 0.012 + 0.07 * (1 - u) * Math.min(1, u / 0.1 + 0.4), { T: 160, R: 18 }),
+    taperTube([[0.16, -0.38, 0.04], [0.28, -0.2, 0.06], [0.2, 0.0, 0.04], [0.32, 0.18, 0.02]], (u) => 0.01 + 0.045 * (1 - u) * Math.min(1, u / 0.1 + 0.4), { T: 120, R: 16 })).rotateX(0.22),
+  // 물보라: a smaller wave whose crest breaks into foam, spray bursting off it in an arc
+  'wave+wind': () => merge(
+    waveGeo(1.05).scale(0.62, 0.62, 0.62).translate(-0.34, -0.42, 0),
+    shrinkWrap(blobs([[0.08, 0.2, 0.04, 0.11], [0.22, 0.16, -0.03, 0.09], [-0.04, 0.24, 0.0, 0.08], [0.32, 0.08, 0.02, 0.07]], 0.06), { center: [0.14, 0.17, 0], seg: [110, 80] }),
+    ...[[0.2, 0.42, 0.04, 0.07], [0.38, 0.4, -0.05, 0.062], [0.52, 0.3, 0.05, 0.055], [0.06, 0.52, -0.02, 0.05], [0.32, 0.58, 0.05, 0.048], [0.62, 0.16, -0.03, 0.045],
+      [0.48, 0.52, -0.04, 0.04], [0.7, 0.34, 0.04, 0.038], [0.18, 0.68, 0.02, 0.035], [0.78, 0.04, 0.0, 0.034], [0.62, 0.5, 0.05, 0.03], [0.4, 0.72, -0.03, 0.028],
+      [0.84, 0.22, -0.05, 0.026], [0.74, 0.62, 0.0, 0.022], [0.9, 0.42, 0.03, 0.02]]
+      .map(([dx, dy, dz, r]) => new THREE.SphereGeometry(r, 20, 14).translate(dx, dy, dz))),
+  // 빗방울 물결: two ripples spreading and a drop just landing
+  'wave+rain': () => merge(
+    new THREE.TorusGeometry(0.5, 0.05, 14, 80).rotateX(Math.PI / 2).translate(0, 0.21, 0),
+    new THREE.TorusGeometry(0.84, 0.045, 14, 100).rotateX(Math.PI / 2).translate(0, 0.14, 0),
+    shrinkWrap((x, y, z) => roundCone(x, y, z, 0, 0.5, 0.17, 0.02, 0.36), { center: [0, 0.58, 0], seg: [60, 40] }),
+  ).rotateX(0.8),
+  // 비바람: a cloud with rain streaks slanting in the wind
+  'wind+rain': () => merge(cloudGeo(1),
+    ...[-0.5, -0.17, 0.16, 0.49].map((x, i) => new THREE.CapsuleGeometry(0.055, 0.34, 6, 12).rotateZ(-0.45).translate(x - 0.1, -0.74 - (i % 2) * 0.16, 0.05))),
+  // 노을: the sun half set behind a band of sea
+  'fire+wave+wind': () => {
+    const s = new THREE.Shape(); s.moveTo(-1.25, -0.8); s.lineTo(1.25, -0.8);
+    const top = []; for (let i = 0; i <= 40; i++) { const x = 1.25 - i * 2.5 / 40; top.push(V2(x, -0.3 + 0.07 * Math.sin(x * 5))); }
+    s.splineThru(top); s.closePath();
+    const sea = smooth(new THREE.ExtrudeGeometry(s, { depth: 0.3, bevelEnabled: true, bevelThickness: 0.16, bevelSize: 0.12, bevelSegments: 6, curveSegments: 3 }).translate(0, 0, -0.15));
+    return merge(new THREE.SphereGeometry(0.78, 64, 48).scale(1, 1, 0.6).translate(0, 0.12, -0.25), sea);
+  },
+  // 온천: a round pool with a thick rim, steam rising from it
+  'fire+wave+rain': () => merge(
+    shrinkWrap((x, y, z) => sph(x, y, z, 0, -0.3, 0, 0.92, 0.4, 0.92), { center: [0, -0.3, 0], seg: [120, 80] }),
+    new THREE.TorusGeometry(0.88, 0.13, 18, 96).rotateX(Math.PI / 2).translate(0, -0.18, 0),
+    shrinkWrap(blobs([[-0.32, 0.12, 0, 0.17], [0, 0.2, 0, 0.21], [0.32, 0.1, 0, 0.16], [-0.2, 0.46, 0, 0.14], [0.16, 0.52, 0, 0.15], [-0.02, 0.8, 0, 0.11]], 0.18), { center: [0, 0.3, 0], seg: [100, 70] }),
+  ).rotateX(0.45),
+  // 무지개: an arch resting on two small clouds
+  'fire+wind+rain': () => merge(
+    new THREE.TorusGeometry(1, 0.24, 28, 140, Math.PI),
+    shrinkWrap(blobs([[-1, -0.06, 0, 0.3], [-1.28, -0.12, 0, 0.2], [-0.74, -0.14, 0.02, 0.2]], 0.16), { center: [-1, -0.08, 0], seg: [80, 60] }),
+    shrinkWrap(blobs([[1, -0.06, 0, 0.3], [1.28, -0.12, 0, 0.2], [0.74, -0.14, 0.02, 0.2]], 0.16), { center: [1, -0.08, 0], seg: [80, 60] }),
+  ),
+  // 폭풍: a spiral of cloud winding into a calm eye, seen at an angle
+  'wave+wind+rain': () => {
+    const pts = [];
+    for (let i = 0; i <= 140; i++) { const u = i / 140, th = u * 2.6 * Math.PI, R = 0.2 + 0.85 * u; pts.push([R * Math.cos(th), R * Math.sin(th), 0.06 * Math.sin(th * 2)]); }
+    return merge(taperTube(pts, (u) => (0.07 + 0.2 * u) * cap(u, 0.86, 0.04) + 0.004, { T: 420, R: 30, zs: 1.1 }),
+      new THREE.SphereGeometry(0.16, 32, 24)).rotateX(-0.7);
+  },
+  // 작은 행성: everything at once, a small world with a ring and a moon
+  'fire+wave+wind+rain': () => merge(
+    new THREE.SphereGeometry(0.78, 64, 48),
+    new THREE.TorusGeometry(1.22, 0.065, 14, 140).rotateX(Math.PI / 2.4).rotateZ(0.32),
+    new THREE.SphereGeometry(0.17, 32, 24).translate(1.22, 0.78, 0.2),
+  ),
+};
+
+// Idle motion, in each object's own space (hgt = 0 at the bottom, 1 at the top)
+const DEFORM = {
+  fire: `transformed.x += sin(uTime * 1.3 + position.y * 1.8) * 0.07 * hgt * hgt * uAmp;
+         transformed.z += cos(uTime * 1.05 + position.y * 1.5) * 0.05 * hgt * hgt * uAmp;`,
+  wave: `transformed.y += sin(position.x * 2.6 - uTime * 1.4) * 0.05 * hgt * uAmp;
+         transformed.x += sin(uTime * 0.9) * 0.04 * hgt * hgt * uAmp;`,
+  wind: `transformed.xy += normalize(position.xy + 0.001) * sin(length(position.xy) * 9.0 - uTime * 2.2) * 0.022 * uAmp;`,
+  rain: `transformed.y *= 1.0 + 0.04 * sin(uTime * 2.2) * uAmp;
+         transformed.xz *= 1.0 - 0.02 * sin(uTime * 2.2) * uAmp;`,
+  combo: `transformed += objectNormal * sin(uTime * 1.2 + position.y * 2.2 + position.x * 1.3) * 0.02 * uAmp;`,
+};
+
+
+/* ---------- New sounds: CITY (도심) and NOISE (화이트 노이즈) ----------
+   Same material as the nature set: a milky body with two soft lights inside (pos = height 0..1, rad = size vs the object).
+   Needs the helpers from 몽환 오브제/index.html: smin, sph, roundCone, shrinkWrap, smooth, merge, cloudGeo. */
+const NEW_TRACKS = [
+  // CITY
+  { id: 'coffee', label: 'COFFEE', ko: '커피 내리기', theme: 'city', body: '#fff4ea', rim: '#f0dccb',
+    glowA: '#c9784a', posA: 0.22, radA: 0.5, glowB: '#ffd99c', posB: 0.82, radB: 0.42 },
+  { id: 'train', label: 'TRAIN', ko: '밤기차', theme: 'city', body: '#f3f2ff', rim: '#dadcf6',
+    glowA: '#ffcf5e', posA: 0.62, radA: 0.42, glowB: '#6f7dff', posB: 0.12, radB: 0.5 },
+  { id: 'typing', label: 'TYPING', ko: '타자 소리', theme: 'city', body: '#f4f6ff', rim: '#d9dff2',
+    glowA: '#8fb0ff', posA: 0.35, radA: 0.5, glowB: '#ffb8dc', posB: 0.85, radB: 0.36 },
+  { id: 'page', label: 'PAGE', ko: '책장 넘기기', theme: 'city', body: '#fffaf1', rim: '#efe3d2',
+    glowA: '#ffc16e', posA: 0.45, radA: 0.48, glowB: '#9fc2ff', posB: 0.9, radB: 0.34 },
+  // NOISE
+  { id: 'fan', label: 'FAN', ko: '선풍기', theme: 'noise', body: '#effbff', rim: '#cfeaf4',
+    glowA: '#6fdcff', posA: 0.5, radA: 0.34, glowB: '#b9ffe2', posB: 0.88, radB: 0.4 },
+  { id: 'cabin', label: 'CABIN', ko: '비행기 기내', theme: 'noise', body: '#f5f3ff', rim: '#ddd7f3',
+    glowA: '#ff9474', posA: 0.3, radA: 0.42, glowB: '#8db6ff', posB: 0.78, radB: 0.44 },
+  { id: 'static', label: 'STATIC', ko: '라디오 잡음', theme: 'noise', body: '#f6f3ff', rim: '#ded8f4',
+    glowA: '#6fe6dc', posA: 0.36, radA: 0.46, glowB: '#ff9bd4', posB: 0.72, radB: 0.36 },
+  { id: 'hum', label: 'HUM', ko: '밤 냉장고', theme: 'noise', body: '#f2f8ff', rim: '#d6e6f4',
+    glowA: '#9fe2ff', posA: 0.3, radA: 0.5, glowB: '#fff0a8', posB: 0.64, radB: 0.36 },
+];
+
+// extra signed distance helpers
+const smax = (a, b, k) => -smin(-a, -b, k);
+function roundBox(x, y, z, bx, by, bz, r) {
+  const qx = Math.abs(x) - bx + r, qy = Math.abs(y) - by + r, qz = Math.abs(z) - bz + r;
+  return Math.hypot(Math.max(qx, 0), Math.max(qy, 0), Math.max(qz, 0)) + Math.min(Math.max(qx, qy, qz), 0) - r;
+}
+// upright cylinder: radius r, half height h, edge radius rr
+function roundCyl(x, y, z, r, h, rr) {
+  const dx = Math.hypot(x, z) - r + rr, dy = Math.abs(y) - h + rr;
+  return Math.min(Math.max(dx, dy), 0) + Math.hypot(Math.max(dx, 0), Math.max(dy, 0)) - rr;
+}
+// one convex piece, wrapped from its own centre
+const part = (sdf, center, seg = [110, 80]) => shrinkWrap(sdf, { center, seg });
+const rot2 = (a, b, t) => [a * Math.cos(t) + b * Math.sin(t), -a * Math.sin(t) + b * Math.cos(t)];
+function roundRectShape(w, h, r) {
+  const s = new THREE.Shape(), x = -w / 2, y = -h / 2;
+  s.moveTo(x + r, y); s.lineTo(x + w - r, y); s.absarc(x + w - r, y + r, r, -Math.PI / 2, 0); s.lineTo(x + w, y + h - r);
+  s.absarc(x + w - r, y + h - r, r, 0, Math.PI / 2); s.lineTo(x + r, y + h); s.absarc(x + r, y + h - r, r, Math.PI / 2, Math.PI);
+  s.lineTo(x, y + r); s.absarc(x + r, y + r, r, Math.PI, Math.PI * 1.5); return s;
+}
+
+const NEW_SHAPES = {
+  // a drip cone sitting on a round cup, with a little handle
+  coffee: () => merge(
+    shrinkWrap((x, y, z) => {
+      // the dripper is a cone cut flat at the top, with a soft rim
+      const cone = smax(roundCone(x, y, z, 0, -0.08, 0.14, 0.5, 0.5), y - 0.3, 0.05);
+      const rim = roundCyl(x, y - 0.3, z, 0.5, 0.05, 0.05);
+      return smin(roundCyl(x, y + 0.42, z, 0.52, 0.34, 0.16), smin(cone, rim, 0.05), 0.07);
+    }, { center: [0, -0.1, 0], seg: [160, 120] }),
+    new THREE.TorusGeometry(0.19, 0.075, 18, 56).translate(0.56, -0.4, 0)),
+  // one rounded carriage with three windows pressed into its side, on two soft wheels
+  train: () => shrinkWrap((x, y, z) => {
+    // a long body whose front end is a round nose
+    let d = smin(roundBox(x + 0.1, y, z, 0.88, 0.4, 0.4, 0.3), sph(x, y, z, 0.74, -0.02, 0, 0.42, 0.95, 0.98), 0.12);
+    for (const wx of [-0.56, -0.08, 0.4]) d = smax(d, -roundBox(x - wx, y - 0.08, z - 0.48, 0.18, 0.15, 0.17, 0.1), 0.035);
+    for (const wx of [-0.56, 0.5]) d = smin(d, sph(x, y, z, wx, -0.44, 0, 0.16, 1, 1.5), 0.05);
+    return d;
+  }, { center: [0, -0.05, 0], seg: [170, 120] }),
+  // a puffy keypad: six round keys on a soft base, one pressed down (each part wrapped on its own, so the gaps stay clean)
+  typing: () => {
+    const parts = [part((x, y, z) => roundBox(x, y + 0.3, z, 0.96, 0.15, 0.64, 0.14), [0, -0.3, 0])];
+    let i = 0;
+    for (const kz of [-0.24, 0.26]) for (const kx of [-0.6, 0, 0.6]) {
+      const ky = (i++ === 4 ? -0.08 : 0) - 0.02;
+      parts.push(part((x, y, z) => roundBox(x - kx, y - ky, z - kz, 0.21, 0.17, 0.18, 0.12), [kx, ky, kz], [70, 50]));
+    }
+    return merge(...parts).rotateX(0.62);
+  },
+  // an open book with one page lifting as it turns
+  page: () => {
+    // each leaf is a soft slab hinged at the spine
+    const leaf = (ang, w, t, d, ox, oy) => smooth(new RoundedBoxGeometry(w, t, d, 5, t / 2.2).translate(ox, oy, 0).rotateZ(ang).translate(0, -0.22, 0));
+    return merge(leaf(0.26, 0.96, 0.12, 1.2, -0.5, 0), leaf(-0.26, 0.96, 0.12, 1.2, 0.5, 0), leaf(1.05, 0.88, 0.06, 1.14, 0.46, 0.04)).rotateX(0.5);
+  },
+  // three soft blades around a hub, inside a thin guard ring
+  fan: () => merge(
+    shrinkWrap((x, y, z) => {
+      let d = sph(x, y, z, 0, 0, 0, 0.19, 1, 1.4);
+      for (let k = 0; k < 3; k++) {
+        const a = 0.35 + k * Math.PI * 2 / 3, [u, v] = rot2(x - Math.cos(a) * 0.46, y - Math.sin(a) * 0.46, a);
+        d = smin(d, (Math.hypot(u / 0.44, v / 0.27, z / 0.1) - 1) * 0.1, 0.12);
+      }
+      return d;
+    }, { center: [0, 0, 0], seg: [170, 120] }),
+    new THREE.TorusGeometry(0.98, 0.05, 16, 120)),
+  // an aeroplane window: a thick rounded frame, the pane, and clouds at dusk inside
+  cabin: () => {
+    // the frame is one soft tube around a rounded window, so it has no seams
+    const loop = roundRectShape(0.94, 1.32, 0.44).getSpacedPoints(180).map((p) => V3(p.x, p.y, 0));
+    const frame = smooth(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(loop, true), 240, 0.17, 28, true)).scale(1, 1, 1.25);
+    // the pane sits well behind the frame so the window reads as deep
+    const pane = smooth(new THREE.ExtrudeGeometry(roundRectShape(0.8, 1.18, 0.38), { depth: 0.03, bevelEnabled: true, bevelThickness: 0.015, bevelSize: 0.015, bevelSegments: 3, curveSegments: 48 }).translate(0, 0, -0.2));
+    return merge(frame, pane, cloudGeo(0.26).translate(-0.08, -0.32, -0.06), cloudGeo(0.17).translate(0.2, -0.16, -0.08));
+  },
+  // a small radio with a speaker pressed into its face, one dial and an antenna
+  static: () => merge(
+    shrinkWrap((x, y, z) => {
+      let d = roundBox(x, y, z, 0.8, 0.52, 0.34, 0.27);
+      d = smax(d, -roundCyl(x + 0.3, z - 0.42, y + 0.02, 0.27, 0.1, 0.05), 0.04);
+      return smin(d, sph(x, y, z, 0.44, 0.06, 0.32, 0.13, 1, 0.8), 0.05);
+    }, { center: [0, 0, 0], seg: [170, 120] }),
+    new THREE.CapsuleGeometry(0.035, 0.7, 6, 12).rotateZ(-0.5).translate(0.47, 0.81, -0.05),
+    new THREE.SphereGeometry(0.08, 24, 16).translate(0.66, 1.15, -0.05)),
+  // a soft, tall fridge with its door seam and two handles
+  // freezer and fridge doors as two soft blocks with a thin gap between them
+  hum: () => merge(
+    smooth(new RoundedBoxGeometry(1.04, 0.56, 0.84, 6, 0.26).translate(0, 0.6, 0)),
+    smooth(new RoundedBoxGeometry(1.04, 1.14, 0.84, 6, 0.3).translate(0, -0.29, 0)),
+    smooth(new RoundedBoxGeometry(0.09, 0.28, 0.1, 4, 0.044).translate(0.3, 0.58, 0.44)),
+    smooth(new RoundedBoxGeometry(0.09, 0.42, 0.1, 4, 0.044).translate(0.3, 0.06, 0.44))),
+};
+
+/* ---------- CITY combinations: what two or more city sounds become ----------
+   Keys list the sounds in NEW_TRACKS order (coffee, train, typing, page). Needs new-objects.js loaded first.
+   Every piece is convex or wrapped on its own, so shrinkWrap never has to see round a gap. */
+const sdRoundRect2 = (x, y, bx, by, r) => { const qx = Math.abs(x) - bx + r, qy = Math.abs(y) - by + r; return Math.hypot(Math.max(qx, 0), Math.max(qy, 0)) + Math.min(Math.max(qx, qy), 0) - r; };
+// a flat 2D shape given thickness 2h and soft edges r
+const slab = (d2, z, h, r) => { const wx = d2 + r, wy = Math.abs(z) - h + r; return Math.min(Math.max(wx, wy), 0) + Math.hypot(Math.max(wx, 0), Math.max(wy, 0)) - r; };
+const rbox = (w, h, d, r, seg = 4) => smooth(new RoundedBoxGeometry(w, h, d, seg, r));
+const cupGeo = (s) => merge(part((x, y, z) => roundCyl(x, y, z, 0.52, 0.34, 0.16), [0, 0, 0], [90, 70]), new THREE.TorusGeometry(0.19, 0.075, 16, 48).translate(0.56, 0.02, 0)).scale(s, s, s);
+const steam = (s) => taperTube([[0, 0, 0], [0.09, 0.16, 0], [-0.07, 0.32, 0], [0.05, 0.48, 0]], (u) => 0.012 + 0.05 * (1 - u) * Math.min(1, u / 0.12 + 0.4), { T: 120, R: 16 }).scale(s, s, s);
+// a takeaway cup with a lid, wrapped as one shape so the see-through material never shows layers inside it (s = scale)
+const takeaway = (cx, cy, cz, s = 1) => part((x, y, z) => {
+  const px = (x - cx) / s, py = (y - cy) / s, pz = (z - cz) / s, r = 0.13 + 0.045 * (py / 0.21);
+  const body = smax(Math.hypot(px, pz) - r, Math.abs(py) - 0.21, 0.035);
+  const lid = roundCyl(px, py - 0.225, pz, 0.168, 0.028, 0.02);
+  return smin(smin(body, lid, 0.015), sph(px, py, pz, 0, 0.25, 0, 0.085, 0.6), 0.02) * s;
+}, [cx, cy, cz], [100, 80]);
+const bookBase = () => {
+  const leaf = (ang, w, t, d, ox, oy) => rbox(w, t, d, t / 2.2, 5).translate(ox, oy, 0).rotateZ(ang).translate(0, -0.22, 0);
+  return merge(leaf(0.26, 0.96, 0.12, 1.2, -0.5, 0), leaf(-0.26, 0.96, 0.12, 1.2, 0.5, 0), leaf(1.05, 0.88, 0.06, 1.14, 0.46, 0.04));
+};
+
+const CITY_COMBOS = [
+  // 자판기 커피: the coffee machine on a station platform at dawn: a lit panel, a row of buttons, a paper cup steaming in the slot
+  { key: 'coffee+train', name: '자판기 커피', body: '#fff4ee', rim: '#eedcd6', glowA: '#ffcf5e', posA: 0.64, radA: 0.38, glowB: '#c9784a', posB: 0.22, radB: 0.34,
+    shape: () => {
+      const F = 0.31;   // front face of the body
+      const paperCup = smooth(new THREE.CylinderGeometry(0.1, 0.072, 0.19, 36, 3).translate(0, -0.47, F + 0.12));
+      return merge(
+        rbox(0.92, 1.5, 0.62, 0.2, 6),
+        rbox(0.82, 0.16, 0.05, 0.05, 3).translate(0, 0.6, F),                      // the sign band on top
+        rbox(0.5, 0.56, 0.05, 0.07, 3).translate(-0.12, 0.2, F),                  // the lit panel of drinks
+        ...[0.38, 0.2, 0.02].map((by) => new THREE.SphereGeometry(0.055, 20, 14).scale(1, 1, 0.5).translate(0.3, by, F + 0.01)),
+        rbox(0.1, 0.05, 0.04, 0.02, 2).translate(0.3, -0.12, F + 0.01),           // the coin slot
+        rbox(0.44, 0.3, 0.12, 0.06, 3).translate(0, -0.42, F + 0.02),            // the hood over the cup slot
+        paperCup, steam(0.36).translate(0, -0.3, F + 0.12),
+        rbox(1.1, 0.06, 0.8, 0.03, 3).translate(0, -0.79, 0.04));                // the platform it stands on
+    } },
+  // 카페 작업: an open laptop with soft keys, a cup beside it
+  { key: 'coffee+typing', name: '카페 작업', body: '#f4f5ff', rim: '#dadff2', glowA: '#8fb0ff', posA: 0.72, radA: 0.5, glowB: '#ffd99c', posB: 0.2, radB: 0.4,
+    shape: () => {
+      const keys = [];
+      for (const kz of [-0.02, 0.24]) for (let i = 0; i < 5; i++) keys.push(rbox(0.22, 0.05, 0.16, 0.022, 3).translate(-0.56 + i * 0.28, -0.22, kz));
+      return merge(rbox(1.6, 0.12, 1.05, 0.05).translate(0, -0.3, 0.05),
+        rbox(1.6, 1.0, 0.08, 0.035).translate(0, 0.5, 0).rotateX(-0.28).translate(0, -0.26, -0.45), ...keys,
+        cupGeo(0.34).translate(0.98, -0.12, 0.42)).rotateX(0.32);
+    } },
+  // 북카페: an open book with a cup resting on its page
+  { key: 'coffee+page', name: '북카페', body: '#fff7ee', rim: '#efe2d4', glowA: '#ffc16e', posA: 0.3, radA: 0.5, glowB: '#c9784a', posB: 0.8, radB: 0.35,
+    // two books stacked a little askew, each a soft cover around a lighter block of pages, the cup on top
+    shape: () => {
+      const book = (w, h, d) => merge(rbox(w, 0.05, d, 0.024, 3).translate(0, h / 2 - 0.025, 0), rbox(w, 0.05, d, 0.024, 3).translate(0, -h / 2 + 0.025, 0),
+        rbox(0.05, h, d, 0.024, 3).translate(-w / 2 + 0.025, 0, 0), rbox(w - 0.1, h - 0.08, d - 0.08, 0.03, 3).translate(0.02, 0, 0));
+      return merge(book(1.3, 0.3, 0.92).rotateY(0.12).translate(0, -0.42, 0), book(1.1, 0.26, 0.8).rotateY(-0.2).translate(0.06, -0.14, 0.02),
+        cupGeo(0.42).translate(0.06, 0.13, 0.04), steam(0.62).translate(0.06, 0.3, 0.04)).rotateX(0.2);
+    } },
+  // 기차표: a soft ticket with notched sides and a perforation line
+  { key: 'train+typing', name: '기차표', body: '#f5f3ff', rim: '#dcdbf5', glowA: '#ffcf5e', posA: 0.68, radA: 0.45, glowB: '#8fb0ff', posB: 0.3, radB: 0.5,
+    shape: () => shrinkWrap((x, y, z) => {
+      let d2 = sdRoundRect2(x, y, 0.84, 0.46, 0.16);
+      d2 = smax(d2, -(Math.hypot(Math.abs(x) - 0.84, y) - 0.16), 0.03);
+      let d = slab(d2, z, 0.07, 0.05);
+      for (const yy of [-0.3, -0.1, 0.1, 0.3]) d = smax(d, -sph(x, y, z, 0.36, yy, 0.08, 0.04), 0.01);
+      return d;
+    }, { center: [0, 0, 0], seg: [180, 120] }).rotateZ(-0.18).rotateX(0.28) },
+  // 지도: a folded map standing in a zigzag, a pin on the destination
+  { key: 'train+page', name: '지도', body: '#f7f8ff', rim: '#dde3f2', glowA: '#ffcf5e', posA: 0.86, radA: 0.3, glowB: '#9fc2ff', posB: 0.35, radB: 0.55,
+    shape: () => merge(
+      rbox(0.62, 0.95, 0.06, 0.03).rotateY(0.5).translate(-0.53, -0.1, 0.05),
+      rbox(0.62, 0.95, 0.06, 0.03).rotateY(-0.5).translate(0, -0.1, 0.05),
+      rbox(0.62, 0.95, 0.06, 0.03).rotateY(0.5).translate(0.53, -0.1, 0.05),
+      new THREE.SphereGeometry(0.15, 32, 24).translate(0.08, 0.66, 0.24),
+      part((x, y, z) => roundCone(x, y, z, 0.08, 0.36, 0.03, 0.13, 0.28), [0.08, 0.5, 0], [60, 40]).translate(0, 0, 0.24)) },
+  // 타자기: a soft typewriter with a sheet rising from its roller
+  { key: 'typing+page', name: '타자기', body: '#f6f6ff', rim: '#dcdff2', glowA: '#ffc16e', posA: 0.82, radA: 0.38, glowB: '#8fb0ff', posB: 0.25, radB: 0.5,
+    shape: () => {
+      const keys = [];
+      for (const [kz, ky] of [[0.3, -0.02], [0.08, 0.02]]) for (let i = 0; i < 4; i++) keys.push(rbox(0.19, 0.09, 0.14, 0.04, 3).translate(-0.42 + i * 0.28, ky, kz));
+      return merge(part((x, y, z) => roundBox(x, y + 0.25, z, 0.72, 0.24, 0.46, 0.18), [0, -0.25, 0]), ...keys,
+        new THREE.CapsuleGeometry(0.11, 1.2, 8, 20).rotateZ(Math.PI / 2).translate(0, 0.1, -0.24),
+        rbox(0.84, 0.92, 0.03, 0.012, 3).rotateX(-0.22).translate(0, 0.56, -0.34)).rotateX(0.22);
+    } },
+  // 기차역 벤치: a city platform bench with a small laptop open and a takeaway coffee on its seat, the yellow tactile strip along the platform edge
+  { key: 'coffee+train+typing', name: '기차역 벤치', body: '#f5f4ff', rim: '#dcdcf4', glowA: '#ffcf5e', posA: 0.55, radA: 0.42, glowB: '#c9784a', posB: 0.3, radB: 0.32,
+    shape: () => {
+      const seatY = -0.14, seatTop = seatY + 0.045;
+      const bumps = [];
+      for (const bz of [0.34, 0.42]) for (let i = 0; i < 13; i++) bumps.push(new THREE.SphereGeometry(0.022, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2).translate(-0.78 + i * 0.13, -0.57, bz));
+      return merge(
+        rbox(1.9, 0.06, 1.0, 0.03, 3).translate(0, -0.62, 0.02),                              // the platform floor
+        rbox(1.9, 0.02, 0.2, 0.01, 2).translate(0, -0.585, 0.38), ...bumps,                  // the tactile strip
+        ...[-0.6, 0.6].map((lx) => rbox(0.08, 0.42, 0.42, 0.04, 3).translate(lx, -0.38, 0)),  // legs
+        rbox(1.5, 0.09, 0.48, 0.045, 4).translate(0, seatY, 0.02),                            // seat
+        rbox(1.5, 0.36, 0.08, 0.04, 4).rotateX(-0.18).translate(0, 0.13, -0.25),               // backrest
+        // a small laptop left open on the seat
+        merge(rbox(0.46, 0.03, 0.32, 0.015, 2).translate(0, 0.015, 0.08),
+          rbox(0.46, 0.3, 0.025, 0.012, 2).translate(0, 0.15, 0).rotateX(-0.42).translate(0, 0.02, -0.07)).rotateY(0.38).translate(-0.34, seatTop, 0.1),
+        takeaway(0.42, seatTop + 0.13, 0.1, 0.62), steam(0.34).translate(0.42, seatTop + 0.33, 0.1)).rotateX(0.16);
+    } },
+  // 여행 가방: a soft suitcase with straps, a handle and a sticker
+  { key: 'coffee+train+page', name: '여행 가방', body: '#fff4ec', rim: '#eedcd4', glowA: '#c9784a', posA: 0.3, radA: 0.5, glowB: '#9fc2ff', posB: 0.82, radB: 0.35,
+    shape: () => merge(
+      part((x, y, z) => roundBox(x, y, z, 0.68, 0.5, 0.26, 0.2), [0, 0, 0]),
+      new THREE.TorusGeometry(0.2, 0.05, 14, 40, Math.PI).translate(0, 0.5, 0),
+      rbox(0.1, 1.03, 0.56, 0.05, 3).translate(-0.36, 0, 0), rbox(0.1, 1.03, 0.56, 0.05, 3).translate(0.36, 0, 0),
+      part((x, y, z) => sph(x, y, z, -0.04, 0.08, 0.27, 0.14, 1, 0.22), [-0.04, 0.08, 0.27], [50, 36]),
+      ...[[-0.5, 0.15], [0.5, 0.15], [-0.5, -0.15], [0.5, -0.15]].map(([wx, wz]) => new THREE.SphereGeometry(0.07, 20, 14).translate(wx, -0.55, wz))) },
+  // 책상 조명: a desk lamp bent over a pool of warm light
+  { key: 'coffee+typing+page', name: '책상 조명', body: '#fffaf0', rim: '#efe4d6', glowA: '#ffd99c', posA: 0.52, radA: 0.36, glowB: '#8fb0ff', posB: 0.1, radB: 0.45,
+    shape: () => merge(
+      part((x, y, z) => roundCyl(x, y + 0.85, z, 0.42, 0.07, 0.06), [0, -0.85, 0], [80, 50]),
+      new THREE.CapsuleGeometry(0.05, 0.62, 6, 14).rotateZ(0.39).translate(-0.135, -0.45, 0),
+      new THREE.SphereGeometry(0.085, 20, 14).translate(-0.27, -0.12, 0),
+      new THREE.CapsuleGeometry(0.05, 0.5, 6, 14).rotateZ(-0.9).translate(-0.035, 0.065, 0),
+      // the shade: half a dome, its open face turned down toward the desk
+      new THREE.SphereGeometry(0.32, 64, 32, 0, Math.PI * 2, 0, Math.PI / 2).rotateZ(0.594).translate(0.32, 0.28, 0),
+      new THREE.TorusGeometry(0.32, 0.035, 14, 80).rotateX(Math.PI / 2).rotateZ(0.594).translate(0.32, 0.28, 0),
+      new THREE.SphereGeometry(0.13, 24, 18).translate(0.32 + 0.56 * 0.07, 0.28 - 0.83 * 0.07, 0)) },
+  // 편지: an envelope with its flap and a round seal
+  { key: 'train+typing+page', name: '편지', body: '#fff6fa', rim: '#f0dce6', glowA: '#ffb8dc', posA: 0.45, radA: 0.42, glowB: '#ffcf5e', posB: 0.85, radB: 0.35,
+    shape: () => shrinkWrap((x, y, z) => {
+      const body = slab(sdRoundRect2(x, y, 0.82, 0.54, 0.12), z, 0.06, 0.04);
+      const f2 = Math.max(y - 0.5, (-0.06 + 0.72 * Math.abs(x) - y) / 1.23) + 0.02;
+      const flap = slab(f2, z - 0.08, 0.025, 0.02);
+      return smin(smin(body, flap, 0.02), sph(x, y, z, 0, -0.04, 0.12, 0.13, 1, 0.45), 0.03);
+    }, { center: [0, 0, 0], seg: [180, 120] }).rotateZ(0.12).rotateX(0.22) },
+  // 잠든 도시: a small block of soft towers with lit windows, and a crescent moon
+  { key: 'coffee+train+typing+page', name: '잠든 도시', body: '#f3f3ff', rim: '#d9dbf5', glowA: '#ffcf5e', posA: 0.45, radA: 0.45, glowB: '#6f7dff', posB: 0.92, radB: 0.4,
+    shape: () => {
+      const tower = (cx, w, h, dz) => { const cy = -0.62 + h; return part((x, y, z) => {
+        let d = roundBox(x - cx, y - cy, z - dz, w, h, 0.26, 0.14);
+        for (let r = 0; r < Math.floor(h / 0.2); r++) for (const wx of [-w * 0.42, w * 0.42])
+          d = smax(d, -roundBox(x - cx - wx, y - (cy + h - 0.2 - r * 0.24), z - dz - 0.28, 0.05, 0.06, 0.06, 0.03), 0.02);
+        return d;
+      }, [cx, cy, dz]); };
+      return merge(part((x, y, z) => roundBox(x, y + 0.7, z, 0.98, 0.08, 0.5, 0.07), [0, -0.7, 0], [100, 60]),
+        tower(-0.52, 0.26, 0.32, 0.04), tower(0.04, 0.29, 0.5, -0.06), tower(0.56, 0.24, 0.24, 0.08),
+        part((x, y, z) => smax(sph(x, y, z, 0.62, 0.66, 0, 0.27, 1, 0.6), -sph(x, y, z, 0.74, 0.75, 0, 0.23, 1, 0.9), 0.03), [0.5, 0.56, 0], [90, 70]));
+    } },
+];
+
+/* ---------- NOISE combinations: what two or more white-noise sounds become ----------
+   Keys list the sounds in NEW_TRACKS order (fan, cabin, static, hum). Needs new-objects.js and city-combos.js (helpers) loaded first.
+   Each one is a single object whose parts say which sounds made it. */
+// a thin stream of air, tapering as it drifts
+const air = (pts, w = 0.03) => taperTube(pts, (u) => 0.006 + w * (1 - u) * Math.min(1, u / 0.15 + 0.3), { T: 120, R: 14 });
+// a disc facing the viewer (axis along z)
+const discZ = (cx, cy, cz, r, h, rr) => part((x, y, z) => roundCyl(x - cx, z - cz, y - cy, r, h, rr), [cx, cy, cz], [70, 50]);
+
+const NOISE_COMBOS = [
+  // 머리 위 송풍구: the panel above an airplane seat, two air nozzles and a reading light, air drifting down
+  { key: 'fan+cabin', name: '머리 위 송풍구', body: '#f2f8ff', rim: '#d6e6f4', glowA: '#6fdcff', posA: 0.55, radA: 0.42, glowB: '#ff9474', posB: 0.85, radB: 0.3,
+    shape: () => merge(
+      rbox(1.6, 0.66, 0.2, 0.12, 5).translate(0, 0.32, 0),
+      ...[-0.42, 0.02].flatMap((nx) => [discZ(nx, 0.32, 0.1, 0.19, 0.04, 0.03), new THREE.SphereGeometry(0.1, 28, 20).scale(1, 1, 0.8).translate(nx, 0.3, 0.17)]),
+      discZ(0.5, 0.32, 0.1, 0.13, 0.03, 0.02), new THREE.SphereGeometry(0.07, 24, 16).scale(1, 1, 0.5).translate(0.5, 0.32, 0.14),
+      air([[-0.42, 0.18, 0.22], [-0.36, -0.12, 0.34], [-0.46, -0.42, 0.4], [-0.38, -0.7, 0.42]]),
+      air([[0.02, 0.18, 0.22], [0.1, -0.1, 0.32], [0.0, -0.38, 0.38], [0.08, -0.62, 0.4]]),
+      air([[-0.2, 0.18, 0.2], [-0.16, -0.2, 0.3], [-0.24, -0.5, 0.34]], 0.022)).rotateX(-0.2) },
+  // 스피커: a round cone that pushes air and plays noise, waves drifting off it
+  { key: 'fan+static', name: '스피커', body: '#f1fbff', rim: '#d3ecf2', glowA: '#6fe6dc', posA: 0.4, radA: 0.45, glowB: '#ff9bd4', posB: 0.82, radB: 0.32,
+    shape: () => merge(
+      rbox(0.95, 1.3, 0.5, 0.22, 6),
+      new THREE.TorusGeometry(0.31, 0.05, 16, 64).translate(0, -0.18, 0.26), new THREE.TorusGeometry(0.17, 0.04, 14, 48).translate(0, -0.18, 0.26),
+      new THREE.SphereGeometry(0.09, 24, 16).scale(1, 1, 0.55).translate(0, -0.18, 0.27),
+      new THREE.TorusGeometry(0.1, 0.03, 12, 40).translate(0, 0.36, 0.26), new THREE.SphereGeometry(0.05, 18, 12).scale(1, 1, 0.6).translate(0, 0.36, 0.27),
+      ...[0.62, 0.8].map((r, i) => new THREE.TorusGeometry(r, 0.025, 10, 48, 1.1).rotateZ(-0.55).translate(0, -0.18, 0.18 - i * 0.04))) },
+  // 에어컨: a soft wall unit, its louver tilted open and cool air flowing out
+  { key: 'fan+hum', name: '에어컨', body: '#f0fbff', rim: '#d2ebf4', glowA: '#9fe2ff', posA: 0.6, radA: 0.45, glowB: '#b9ffe2', posB: 0.15, radB: 0.4,
+    shape: () => merge(
+      rbox(1.7, 0.52, 0.42, 0.2, 6).translate(0, 0.3, 0),
+      rbox(1.42, 0.05, 0.2, 0.025, 3).rotateX(0.65).translate(0, 0.06, 0.2),
+      new THREE.SphereGeometry(0.035, 16, 12).translate(0.62, 0.38, 0.215),
+      ...[-0.5, -0.1, 0.3].map((ax, i) => air([[ax, 0.02, 0.26], [ax + 0.06, -0.24, 0.42], [ax - 0.04, -0.5, 0.5], [ax + 0.05, -0.76 + i * 0.04, 0.52]]))) },
+  // 기내 헤드폰: soft over-ear headphones from the seat pocket, the cable curling down
+  { key: 'cabin+static', name: '기내 헤드폰', body: '#f7f3ff', rim: '#ded8f3', glowA: '#ff9bd4', posA: 0.3, radA: 0.42, glowB: '#8db6ff', posB: 0.85, radB: 0.4,
+    shape: () => merge(
+      new THREE.TorusGeometry(0.6, 0.07, 18, 90, Math.PI).translate(0, 0.02, 0),
+      ...[-1, 1].flatMap((s) => [
+        part((x, y, z) => roundCyl(y + 0.08, (x - s * 0.62) * s, z, 0.26, 0.11, 0.08), [s * 0.62, -0.08, 0], [90, 60]),
+        new THREE.TorusGeometry(0.19, 0.075, 14, 48).rotateY(Math.PI / 2).translate(s * 0.48, -0.08, 0)]),
+      air([[-0.66, -0.32, 0.05], [-0.6, -0.55, 0.15], [-0.3, -0.62, 0.25], [-0.05, -0.7, 0.3]], 0.024),
+      new THREE.CapsuleGeometry(0.03, 0.08, 6, 12).rotateZ(Math.PI / 2).translate(0.02, -0.71, 0.3)) },
+  // 기내 카트: the drinks trolley, a door with a latch, two paper cups on top, small wheels
+  { key: 'cabin+hum', name: '기내 카트', body: '#f4f6ff', rim: '#d9def2', glowA: '#fff0a8', posA: 0.55, radA: 0.45, glowB: '#8db6ff', posB: 0.15, radB: 0.4,
+    shape: () => merge(
+      rbox(0.82, 1.1, 0.7, 0.12, 6).translate(0, -0.05, 0),
+      rbox(0.68, 0.84, 0.05, 0.05, 3).translate(0, -0.08, 0.36),
+      new THREE.CapsuleGeometry(0.035, 0.6, 6, 12).rotateZ(Math.PI / 2).translate(0, 0.42, 0.4),
+      discZ(0.22, -0.08, 0.39, 0.05, 0.02, 0.015),
+      ...[-0.17, 0.15].map((cx) => smooth(new THREE.CylinderGeometry(0.085, 0.065, 0.17, 30, 2).translate(cx, 0.6, 0.02))),
+      ...[[-0.3, 0.24], [0.3, 0.24], [-0.3, -0.24], [0.3, -0.24]].map(([wx, wz]) => part((x, y, z) => roundCyl(y + 0.66, x - wx, z - wz, 0.06, 0.03, 0.02), [wx, -0.66, wz], [40, 30]))) },
+  // 브라운관 TV: a soft CRT with a bulging screen, two knobs and rabbit-ear antennas
+  { key: 'static+hum', name: '브라운관 TV', body: '#f4f8ff', rim: '#d8e4f2', glowA: '#6fe6dc', posA: 0.48, radA: 0.42, glowB: '#fff0a8', posB: 0.85, radB: 0.32,
+    shape: () => merge(
+      rbox(1.24, 0.96, 0.8, 0.26, 6).translate(0, -0.1, 0),
+      // the screen: a rounded rectangle bulging gently forward
+      part((x, y, z) => slab(sdRoundRect2(x + 0.12, y + 0.08, 0.36, 0.3, 0.13), z - 0.4 - 0.04 * (1 - Math.min(1, Math.hypot((x + 0.12) / 0.36, (y + 0.08) / 0.3))), 0.04, 0.035), [-0.12, -0.08, 0.41], [100, 80]),
+      ...[0.06, -0.2].map((ky) => new THREE.SphereGeometry(0.065, 22, 16).scale(1, 1, 0.7).translate(0.44, ky, 0.41)),
+      ...[-0.4, 0.4].map((t) => new THREE.CapsuleGeometry(0.025, 0.6, 6, 12).translate(0, 0.3, 0).rotateZ(t).translate(0, 0.38, -0.05)),
+      ...[-0.4, 0.4].map((t) => new THREE.SphereGeometry(0.06, 18, 12).translate(-Math.sin(t) * 0.66, 0.38 + Math.cos(t) * 0.66, -0.05)),
+      ...[-0.38, 0.38].map((fx) => new THREE.SphereGeometry(0.07, 18, 12).scale(1, 0.6, 1).translate(fx, -0.6, 0.1))) },
+  // 프로펠러 비행기: a soft little plane: propeller (air), cabin windows (flight), an antenna (radio)
+  { key: 'fan+cabin+static', name: '프로펠러 비행기', body: '#f6f5ff', rim: '#ddd9f3', glowA: '#ff9474', posA: 0.4, radA: 0.45, glowB: '#6fdcff', posB: 0.82, radB: 0.35,
+    shape: () => merge(
+      new THREE.CapsuleGeometry(0.27, 1.0, 12, 32).rotateZ(Math.PI / 2),
+      rbox(0.44, 0.07, 1.7, 0.035, 4).translate(0.06, -0.08, 0),
+      rbox(0.28, 0.34, 0.06, 0.03, 3).translate(-0.66, 0.24, 0), rbox(0.22, 0.05, 0.6, 0.025, 3).translate(-0.66, 0.06, 0),
+      ...[-0.2, 0.05, 0.3].map((wx) => new THREE.SphereGeometry(0.06, 18, 12).scale(1, 1, 0.4).translate(wx, 0.08, 0.26)),
+      new THREE.SphereGeometry(0.09, 22, 16).translate(0.8, 0, 0),
+      rbox(0.04, 0.72, 0.12, 0.02, 3).rotateX(0.35).translate(0.86, 0, 0),
+      new THREE.CapsuleGeometry(0.018, 0.26, 6, 10).rotateZ(-0.25).translate(0.18, 0.4, 0), new THREE.SphereGeometry(0.04, 16, 12).translate(0.21, 0.55, 0)).rotateY(-0.7).rotateX(0.42).rotateZ(0.1) },
+  // 수면 캡슐: a sleeping pod, its round door window glowing, a small air vent at its side
+  { key: 'fan+cabin+hum', name: '수면 캡슐', body: '#f5f6ff', rim: '#dbdef3', glowA: '#fff0a8', posA: 0.52, radA: 0.42, glowB: '#8db6ff', posB: 0.12, radB: 0.4,
+    shape: () => merge(
+      new THREE.CapsuleGeometry(0.46, 0.95, 14, 40).rotateZ(Math.PI / 2).translate(0, 0.05, 0),
+      new THREE.TorusGeometry(0.25, 0.055, 16, 64).translate(0.12, 0.05, 0.43),
+      smooth(new THREE.CylinderGeometry(0.22, 0.22, 0.03, 48, 1).rotateX(Math.PI / 2).translate(0.12, 0.05, 0.41)),
+      ...[0.18, 0.05, -0.08].map((vy) => new THREE.CapsuleGeometry(0.02, 0.14, 6, 10).rotateZ(Math.PI / 2).translate(-0.48, vy, 0.38)),
+      rbox(1.5, 0.06, 0.8, 0.03, 3).translate(0, -0.47, 0)) },
+  // 백색소음기: the white noise machine: a soft round puck, rings across its top, a ring of light at its base
+  { key: 'fan+static+hum', name: '백색소음기', body: '#f4fbff', rim: '#d6ecf3', glowA: '#6fe6dc', posA: 0.7, radA: 0.42, glowB: '#ff9bd4', posB: 0.15, radB: 0.4,
+    shape: () => merge(
+      part((x, y, z) => smin(roundCyl(x, y + 0.02, z, 0.62, 0.26, 0.22), sph(x, y, z, 0, 0.14, 0, 0.56, 0.32), 0.08), [0, 0, 0], [140, 100]),
+      ...[0.14, 0.27, 0.4].map((r, i) => new THREE.TorusGeometry(r, 0.02, 10, 64).rotateX(Math.PI / 2).translate(0, 0.32 - i * 0.025, 0)),
+      // a band of soft light around its side
+      new THREE.TorusGeometry(0.63, 0.03, 12, 96).rotateX(Math.PI / 2).translate(0, -0.08, 0)).rotateX(0.24) },
+  // 인공위성: a small satellite, its body hums, its dish listens for static, its panels like little cabin wings
+  { key: 'cabin+static+hum', name: '인공위성', body: '#f5f5ff', rim: '#dcdcf4', glowA: '#8db6ff', posA: 0.45, radA: 0.5, glowB: '#fff0a8', posB: 0.82, radB: 0.32,
+    shape: () => merge(
+      rbox(0.5, 0.52, 0.5, 0.12, 5),
+      ...[-1, 1].flatMap((s) => [new THREE.CapsuleGeometry(0.025, 0.18, 6, 10).rotateZ(Math.PI / 2).translate(s * 0.37, 0, 0), rbox(0.8, 0.04, 0.44, 0.02, 3).translate(s * 0.86, 0, 0),
+        ...[-0.2, 0.2].map((gx) => rbox(0.012, 0.05, 0.44, 0.006, 1).translate(s * 0.86 + gx, 0, 0))]),
+      new THREE.SphereGeometry(0.3, 48, 20, 0, Math.PI * 2, 0, Math.PI / 2.6).rotateX(Math.PI).rotateZ(-0.6).translate(0.12, 0.62, 0),
+      new THREE.CapsuleGeometry(0.02, 0.3, 6, 10).rotateZ(-0.6).translate(0.04, 0.42, 0),
+      new THREE.CapsuleGeometry(0.02, 0.32, 6, 10).translate(-0.12, 0.42, 0.1), new THREE.SphereGeometry(0.04, 14, 10).translate(-0.12, 0.6, 0.1)).rotateZ(0.18).rotateX(0.2) },
+  // 열기구: a hot air balloon: the envelope swells with air (fan), the basket is its cabin, the burner hums, a little radio antenna rides along
+  { key: 'fan+cabin+static+hum', name: '열기구', body: '#f8f5ff', rim: '#e2dbf3', glowA: '#ffb07a', posA: 0.22, radA: 0.34, glowB: '#ff9bd4', posB: 0.72, radB: 0.45,
+    shape: () => {
+      const bx = 0.16, bt = -0.82;   // basket centre and the top of the basket
+      // the envelope: a teardrop whose eight gores swell out softly
+      const gore = (y) => Math.min(1, Math.max(0, (y + 0.1) / 0.4)) * Math.min(1, Math.max(0, (0.95 - y) / 0.4));   // fades out at the neck and at the crown
+      const envelope = shrinkWrap((x, y, z) => roundCone(x, y, z, 0, -0.2, 0.17, 0.6, 0.62) - 0.02 * Math.cos(8 * Math.atan2(z, x)) * gore(y), { center: [0, 0.3, 0], seg: [180, 140] });
+      const ropes = [[-1, -1], [1, -1], [-1, 1], [1, 1]].map(([sx, sz]) => {
+        const a = V3(sx * 0.12, -0.3, sz * 0.12), b = V3(bx * 0 + sx * 0.15, bt + 0.02, sz * 0.15), m = a.clone().add(b).multiplyScalar(0.5), d = b.clone().sub(a);
+        return new THREE.CapsuleGeometry(0.012, d.length(), 4, 8).applyQuaternion(new THREE.Quaternion().setFromUnitVectors(V3(0, 1, 0), d.normalize())).translate(m.x, m.y, m.z);
+      });
+      return merge(envelope, ...ropes,
+        rbox(0.36, 0.26, 0.36, 0.07, 4).translate(0, bt - 0.13, 0),                              // the basket
+        smooth(new THREE.CylinderGeometry(0.06, 0.08, 0.1, 24, 1).translate(0, -0.4, 0)),          // the burner
+        new THREE.CapsuleGeometry(0.012, 0.22, 4, 8).rotateZ(-0.3).translate(0.21, bt + 0.08, 0.12), new THREE.SphereGeometry(0.03, 12, 8).translate(0.25, bt + 0.2, 0.12),
+        cloudGeo(0.2).translate(-0.62, -0.62, 0.1), cloudGeo(0.14).translate(0.66, -0.2, -0.1));
+    } },
+  // (구름 침대, the earlier all-four object, kept for reference)
+  { key: 'fan+cabin+static+hum__bed', name: '구름 침대', body: '#f8f6ff', rim: '#e0dbf3', glowA: '#ff9bd4', posA: 0.6, radA: 0.42, glowB: '#8db6ff', posB: 0.15, radB: 0.45, skip: true,
+    shape: () => merge(
+      // a thick cloud for a mattress
+      shrinkWrap(blobs([[0, -0.22, 0, 0.55, 0.8, 0.85], [-0.52, -0.28, 0.04, 0.44, 0.78, 0.85], [0.52, -0.28, 0, 0.46, 0.78, 0.85], [-0.24, -0.1, 0.14, 0.4, 0.8, 0.85], [0.28, -0.1, -0.12, 0.42, 0.8, 0.85], [0.84, -0.36, 0.02, 0.3, 0.8, 0.85], [-0.84, -0.36, 0, 0.28, 0.8, 0.85]], 0.22), { center: [0, -0.24, 0], seg: [180, 130] }),
+      // a fluffy pillow on the left, a blanket folded back over the rest
+      part((x, y, z) => roundBox(x + 0.46, y - 0.14, z + 0.02, 0.3, 0.13, 0.24, 0.13), [-0.46, 0.14, -0.02], [80, 60]),
+      rbox(0.94, 0.08, 0.7, 0.04, 4).translate(0.28, 0.08, 0.06),
+      rbox(0.94, 0.09, 0.2, 0.045, 3).translate(0.28, 0.15, -0.24)).rotateX(0.26)
+    },
+];
+
+return { U, MO, reduceMotion, clamp, TRACKS, COMBOS, SINGLE, COMBO_SHAPES, DEFORM, NEW_TRACKS, NEW_SHAPES, CITY_COMBOS, NOISE_COMBOS, dreamMat };
+})();
+{
+
+const $ = (s) => document.querySelector(s);
+const V3 = (x, y, z) => new THREE.Vector3(x, y, z), V2 = (x, y) => new THREE.Vector2(x, y);
+const store = {
+  get(k, d) { try { const v = localStorage.getItem('onda:' + k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem('onda:' + k, JSON.stringify(v)); } catch (e) { /* storage blocked: keep going without it */ } },
+};
+
+/* ---------- icons (Phosphor) ---------- */
+const P = {
+  squares: 'M104,40H56A16,16,0,0,0,40,56v48a16,16,0,0,0,16,16h48a16,16,0,0,0,16-16V56A16,16,0,0,0,104,40Zm0,64H56V56h48v48Zm96-64H152a16,16,0,0,0-16,16v48a16,16,0,0,0,16,16h48a16,16,0,0,0,16-16V56A16,16,0,0,0,200,40Zm0,64H152V56h48v48Zm-96,32H56a16,16,0,0,0-16,16v48a16,16,0,0,0,16,16h48a16,16,0,0,0,16-16V152A16,16,0,0,0,104,136Zm0,64H56V152h48v48Zm96-64H152a16,16,0,0,0-16,16v48a16,16,0,0,0,16,16h48a16,16,0,0,0,16-16V152A16,16,0,0,0,200,136Zm0,64H152V152h48v48Z',
+  moon: 'M233.54,142.23a8,8,0,0,0-8-2,88.08,88.08,0,0,1-109.8-109.8,8,8,0,0,0-10-10,104.84,104.84,0,0,0-52.91,37A104,104,0,0,0,136,224a103.09,103.09,0,0,0,62.52-20.88,104.84,104.84,0,0,0,37-52.91A8,8,0,0,0,233.54,142.23ZM188.9,190.34A88,88,0,0,1,65.66,67.11a89,89,0,0,1,31.4-26A106,106,0,0,0,96,56,104.11,104.11,0,0,0,200,160a106,106,0,0,0,14.92-1.06A89,89,0,0,1,188.9,190.34Z',
+  sun: 'M120,40V16a8,8,0,0,1,16,0V40a8,8,0,0,1-16,0Zm72,88a64,64,0,1,1-64-64A64.07,64.07,0,0,1,192,128Zm-16,0a48,48,0,1,0-48,48A48.05,48.05,0,0,0,176,128ZM58.34,69.66A8,8,0,0,0,69.66,58.34l-16-16A8,8,0,0,0,42.34,53.66Zm0,116.68-16,16a8,8,0,0,0,11.32,11.32l16-16a8,8,0,0,0-11.32-11.32ZM192,72a8,8,0,0,0,5.66-2.34l16-16a8,8,0,0,0-11.32-11.32l-16,16A8,8,0,0,0,192,72Zm5.66,114.34a8,8,0,0,0-11.32,11.32l16,16a8,8,0,0,0,11.32-11.32ZM48,128a8,8,0,0,0-8-8H16a8,8,0,0,0,0,16H40A8,8,0,0,0,48,128Zm80,80a8,8,0,0,0-8,8v24a8,8,0,0,0,16,0V216A8,8,0,0,0,128,208Zm112-88H216a8,8,0,0,0,0,16h24a8,8,0,0,0,0-16Z',
+  list: 'M224,128a8,8,0,0,1-8,8H40a8,8,0,0,1,0-16H216A8,8,0,0,1,224,128ZM40,72H216a8,8,0,0,0,0-16H40a8,8,0,0,0,0,16ZM216,184H40a8,8,0,0,0,0,16H216a8,8,0,0,0,0-16Z',
+  back: 'M165.66,202.34a8,8,0,0,1-11.32,11.32l-80-80a8,8,0,0,1,0-11.32l80-80a8,8,0,0,1,11.32,11.32L91.31,128Z',
+  up: 'M213.66,165.66a8,8,0,0,1-11.32,0L128,91.31,53.66,165.66a8,8,0,0,1-11.32-11.32l80-80a8,8,0,0,1,11.32,0l80,80A8,8,0,0,1,213.66,165.66Z',
+  sparkle: 'M197.58,129.06,146,110l-19-51.62a15.92,15.92,0,0,0-29.88,0L78,110l-51.62,19a15.92,15.92,0,0,0,0,29.88L78,178l19,51.62a15.92,15.92,0,0,0,29.88,0L146,178l51.62-19a15.92,15.92,0,0,0,0-29.88ZM137,164.22a8,8,0,0,0-4.74,4.74L112,223.85,91.78,169A8,8,0,0,0,87,164.22L32.15,144,87,123.78A8,8,0,0,0,91.78,119L112,64.15,132.22,119a8,8,0,0,0,4.74,4.74L191.85,144ZM144,40a8,8,0,0,1,8-8h16V16a8,8,0,0,1,16,0V32h16a8,8,0,0,1,0,16H184V64a8,8,0,0,1-16,0V48H152A8,8,0,0,1,144,40ZM248,88a8,8,0,0,1-8,8h-8v8a8,8,0,0,1-16,0V96h-8a8,8,0,0,1,0-16h8V72a8,8,0,0,1,16,0v8h8A8,8,0,0,1,248,88Z',
+  timer: 'M128,40a96,96,0,1,0,96,96A96.11,96.11,0,0,0,128,40Zm0,176a80,80,0,1,1,80-80A80.09,80.09,0,0,1,128,216ZM173.66,90.34a8,8,0,0,1,0,11.32l-40,40a8,8,0,0,1-11.32-11.32l40-40A8,8,0,0,1,173.66,90.34ZM96,16a8,8,0,0,1,8-8h48a8,8,0,0,1,0,16H104A8,8,0,0,1,96,16Z',
+  plus: 'M224,128a8,8,0,0,1-8,8H136v80a8,8,0,0,1-16,0V136H40a8,8,0,0,1,0-16h80V40a8,8,0,0,1,16,0v80h80A8,8,0,0,1,224,128Z',
+  check: 'M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z',
+  prev: 'M208,47.88V208.12a16,16,0,0,1-24.43,13.43L64,146.77V216a8,8,0,0,1-16,0V40a8,8,0,0,1,16,0v69.23L183.57,34.45A15.95,15.95,0,0,1,208,47.88Z',
+  next: 'M208,40V216a8,8,0,0,1-16,0V146.77L72.43,221.55A15.95,15.95,0,0,1,48,208.12V47.88A15.95,15.95,0,0,1,72.43,34.45L192,109.23V40a8,8,0,0,1,16,0Z',
+  pause: 'M216,48V208a16,16,0,0,1-16,16H160a16,16,0,0,1-16-16V48a16,16,0,0,1,16-16h40A16,16,0,0,1,216,48ZM96,32H56A16,16,0,0,0,40,48V208a16,16,0,0,0,16,16H96a16,16,0,0,0,16-16V48A16,16,0,0,0,96,32Z',
+  play: 'M240,128a15.74,15.74,0,0,1-7.6,13.51L88.32,229.65a16,16,0,0,1-16.2.3A15.86,15.86,0,0,1,64,216.13V39.87a15.86,15.86,0,0,1,8.12-13.82,16,16,0,0,1,16.2.3L232.4,114.49A15.74,15.74,0,0,1,240,128Z',
+};
+const icon = (n) => `<svg viewBox="0 0 256 256" aria-hidden="true"><path d="${P[n]}"/></svg>`;
+document.querySelectorAll('[data-icon]').forEach((el) => el.insertAdjacentHTML('afterbegin', icon(el.dataset.icon)));
+const setIcon = (el, n) => { el.querySelector('svg')?.remove(); el.insertAdjacentHTML('afterbegin', icon(n)); };
+
+/* ---------- the three themes ---------- */
+const TEXTURES = {
+  fire: ['잔잔한 불씨', '타닥타닥', '활활'], wave: ['잔물결', '넘실', '철썩'], wind: ['산들', '솔솔', '휘잉'], rain: ['가랑비', '빗소리', '소나기'],
+  coffee: ['한 방울씩', '졸졸', '콸콸'], train: ['멀리서', '덜컹덜컹', '가까이'], typing: ['천천히', '톡톡', '빠르게'], page: ['가끔', '사락사락', '자주'],
+  fan: ['미풍', '약풍', '강풍'], cabin: ['낮게', '웅', '깊게'], static: ['사르르', '지직', '치익'], hum: ['조용히', '웅', '묵직하게'],
+};
+const THEMES = {
+  nature: { name: '자연', tracks: TRACKS, combo: (k) => COMBOS[k] && { ...COMBOS[k], shape: COMBO_SHAPES[k] }, single: (id) => SINGLE[id], deform: (id) => DEFORM[id] },
+  city: { name: '도심', tracks: NEW_TRACKS.filter((t) => t.theme === 'city'), combo: (k) => CITY_COMBOS.find((c) => c.key === k), single: (id) => NEW_SHAPES[id], deform: () => DEFORM.combo },
+  noise: { name: '노이즈', tracks: NEW_TRACKS.filter((t) => t.theme === 'noise'), combo: (k) => NOISE_COMBOS.find((c) => c.key === k && !c.skip), single: (id) => NEW_SHAPES[id], deform: () => DEFORM.combo },
+};
+for (const th of Object.values(THEMES)) {
+  th.ids = th.tracks.map((t) => t.id);
+  th.keys = [];
+  for (let m = 1; m < 16; m++) th.keys.push(th.ids.filter((_, i) => m & (1 << i)).join('+'));
+  th.keys.sort((a, b) => a.split('+').length - b.split('+').length);
+}
+const themeOf = (key) => Object.keys(THEMES).find((t) => THEMES[t].ids.includes(key.split('+')[0]));
+const isCombo = (key) => key.includes('+');
+const defFor = (key) => { const th = THEMES[themeOf(key)]; return isCombo(key) ? th.combo(key) : th.tracks.find((t) => t.id === key); };
+const nameFor = (key) => (isCombo(key) ? defFor(key).name : defFor(key).ko);
+const koOf = (id) => defFor(id).ko;
+const thumb = (key) => `thumbs/${key.replace(/\+/g, '_')}.webp`;
+
+const PRESETS = {
+  nature: [{ name: '잠들기 전', icon: 'wind+rain', levels: { wind: 0.4, rain: 0.7 } }, { name: '책 읽는 밤', icon: 'fire+rain', levels: { fire: 0.3, rain: 0.55 } }, { name: '바닷가 산책', icon: 'fire+wave+wind', levels: { fire: 0.46, wave: 0.64, wind: 0.38 } }],
+  city: [{ name: '카페에서', icon: 'coffee+page', levels: { coffee: 0.46, page: 0.64 } }, { name: '작업할 때', icon: 'coffee+typing', levels: { coffee: 0.4, typing: 0.58 } }, { name: '밤 기차 기다리기', icon: 'coffee+train+typing', levels: { coffee: 0.3, train: 0.62, typing: 0.34 } }],
+  noise: [{ name: '깊은 잠', icon: 'fan+static+hum', levels: { fan: 0.4, static: 0.3, hum: 0.5 } }, { name: '비행 중', icon: 'cabin+static', levels: { cabin: 0.52, static: 0.66 } }, { name: '한여름 밤', icon: 'fan+hum', levels: { fan: 0.6, hum: 0.45 } }],
+};
+
+/* ---------- state ---------- */
+const state = {
+  theme: store.get('theme', 'nature'),
+  levels: { nature: {}, city: {}, noise: {} },
+  found: store.get('found', { nature: [], city: [], noise: [] }),
+  saved: store.get('presets', []),
+  preset: null, timerEnd: 0, timerMin: 0, paused: false,
+};
+if (!THEMES[state.theme]) state.theme = 'nature';
+document.documentElement.dataset.onda = state.theme;
+const theme = () => THEMES[state.theme];
+const levels = () => state.levels[state.theme];
+const presetsOf = (t) => [...PRESETS[t], ...state.saved.filter((p) => p.theme === t)];
+
+/* ---------- renderer ---------- */
+const stage = $('#stage'), canvas = $('#gl'), halo = $('.halo');
+let renderer = null;
+try {
+  // the silhouettes already dissolve into the air, so phones can skip multisampling
+  renderer = new THREE.WebGLRenderer({ canvas, antialias: !matchMedia('(pointer: coarse)').matches, alpha: true, powerPreference: 'high-performance' });
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));   // the objects are soft and slightly blurred; 1.5x looks the same and costs far less renderer.setClearColor(0x000000, 0); renderer.toneMapping = THREE.NoToneMapping;
+} catch (e) { renderer = null; }   // no WebGL: the mixer, menus and sound still work
+const scene = new THREE.Scene();
+const CAM_Z = 8, TAN = Math.tan(THREE.MathUtils.degToRad(15));
+const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 60); camera.position.set(0, 0, CAM_Z);
+let VW = 2, VH = 2, BASE = 0.8;
+const CENTER = V3(0, 0, 0);
+function size() {
+  const w = stage.clientWidth, h = stage.clientHeight; if (!w || !h) return;
+  renderer?.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
+  VH = TAN * CAM_Z; VW = VH * camera.aspect;
+  BASE = Math.min(VW * 0.95, VH * 0.74) / 1.4;
+  CENTER.set(0, VH * 0.1, 0);
+}
+new ResizeObserver(size).observe(stage); size();
+
+/* ---------- objects: launched by a slider, merged into one form ---------- */
+const geoCache = {};
+function geoFor(key) {
+  if (!geoCache[key]) { const g = isCombo(key) ? defFor(key).shape() : THEMES[themeOf(key)].single(key)(); g.computeBoundingBox(); g.computeBoundingSphere(); geoCache[key] = g; }
+  return geoCache[key];
+}
+// shapes are built in a background worker so the screen never waits for them; without a worker they build here
+let geoWorker = null;
+const geoWaiting = {};
+function geoFallback() { geoWorker = null; for (const k of Object.keys(geoWaiting)) { const cbs = geoWaiting[k]; delete geoWaiting[k]; try { geoFor(k); cbs.forEach((cb) => cb()); } catch (e) { /* skip a shape that fails */ } } }
+try {
+  if (typeof GEO_WORKER_SRC === 'string' && window.Worker) {
+    const q = matchMedia('(pointer: coarse)').matches ? 0.55 : 0.72;
+    geoWorker = new Worker(URL.createObjectURL(new Blob([GEO_WORKER_SRC.replace('__GEO_Q__', q)], { type: 'text/javascript' })), { type: 'module' });
+    geoWorker.onmessage = ({ data }) => {
+      const cbs = geoWaiting[data.key] || []; delete geoWaiting[data.key];
+      if (data.error) { try { geoFor(data.key); } catch (e) { return; } }
+      else if (!geoCache[data.key]) {
+        const g = new THREE.BufferGeometry();
+        g.setAttribute('position', new THREE.BufferAttribute(data.pos, 3)); g.setAttribute('normal', new THREE.BufferAttribute(data.nor, 3));
+        if (data.idx) g.setIndex(new THREE.BufferAttribute(data.idx, 1));
+        g.computeBoundingBox(); g.computeBoundingSphere(); geoCache[data.key] = g;
+      }
+      cbs.forEach((cb) => cb());
+    };
+    geoWorker.onerror = geoFallback;
+  }
+} catch (e) { geoWorker = null; }
+function withGeo(key, cb) {
+  if (geoCache[key]) return cb();
+  if (!geoWorker) { try { geoFor(key); } catch (e) { return; } return cb(); }
+  if (geoWaiting[key]) { geoWaiting[key].push(cb); return; }
+  geoWaiting[key] = [cb]; geoWorker.postMessage({ key });
+}
+const ents = []; let main = null;
+function makeEntity(key) {
+  const def = defFor(key), geo = geoFor(key), amp = { value: 0.6 }, hit = { value: 0 };
+  const deform = isCombo(key) ? DEFORM.combo : (THEMES[themeOf(key)].deform(key) || DEFORM.combo);
+  const mesh = new THREE.Mesh(geo, dreamMat(def, geo, { deform, amp, hit }));
+  const bs = geo.boundingSphere, fit = new THREE.Group();
+  fit.add(mesh); fit.scale.setScalar(1 / bs.radius); fit.position.copy(bs.center).multiplyScalar(-1 / bs.radius);
+  const spin = new THREE.Group(); spin.add(fit);
+  const holder = new THREE.Group(); holder.add(spin); scene.add(holder);
+  const e = { key, holder, spin, mesh, amp, hit, p: V3(0, 0, 0), v: V3(0, 0, 0), s: 0, sv: 0, ts: 0, target: V3(0, 0, 0), mode: 'main', t: 0, phase: Math.random() * 6, hop: 0, hopV: 0, sq: 0, sqv: 0 };
+  ents.push(e); return e;
+}
+function removeEntity(e) { scene.remove(e.holder); e.mesh.material.dispose(); ents.splice(ents.indexOf(e), 1); }
+const activeKey = () => theme().ids.filter((id) => (levels()[id] || 0) > 0).join('+');
+const slotX = (id) => (-0.36 + 0.24 * Math.max(0, theme().ids.indexOf(id))) * VW;
+function mainScale() {
+  const on = theme().ids.filter((id) => (levels()[id] || 0) > 0); if (!on.length) return 0;
+  const avg = on.reduce((a, id) => a + levels()[id], 0) / on.length;
+  return BASE * (0.78 + 0.28 * avg) * (1 + 0.1 * (on.length - 1));
+}
+function launch(id) {
+  withGeo(id, () => {
+    if (!((levels()[id] || 0) > 0) || !theme().ids.includes(id)) return;   // switched off or another theme while it was being built
+    const e = makeEntity(id);
+    e.mode = 'launch'; e.p.set(slotX(id), -VH - BASE * 0.6, 0.2); e.v.set(0, 6 * MO + 2, 0);
+    e.s = BASE * 0.35; e.ts = BASE * 0.62;
+  });
+}
+function eject(id) {
+  ents.filter((e) => e.mode === 'launch' && e.key === id).forEach((e) => { e.mode = 'leave'; });
+  if (geoCache[id]) { const e = makeEntity(id); e.mode = 'leave'; e.p.copy(main ? main.p : CENTER); e.s = BASE * 0.3; e.ts = BASE * 0.55; e.v.set(0, -1.5, 0); }
+  reform();
+}
+function arrive(e) {
+  const key = activeKey();
+  if (!key.split('+').includes(e.key)) { e.mode = 'leave'; return; }
+  if (main && main.key === key) { absorb(e, main); bump(main); return; }
+  if (!main && key === e.key) { e.mode = 'main'; main = e; setCaption(key); discover(key); return; }
+  absorb(e, null); reform();
+}
+function reform() {
+  const key = activeKey();
+  if (main && main.key === key) return;
+  if (main) { absorb(main, null); main = null; }
+  if (!key) { setCaption(''); return; }
+  if (ents.some((e) => e.mode === 'launch') && !isCombo(key)) return;
+  setCaption(key); discover(key);
+  withGeo(key, () => {
+    if (activeKey() !== key || (main && main.key === key)) return;
+    if (main) absorb(main, null);
+    main = makeEntity(key); main.p.copy(CENTER); main.s = 0; main.sv = 0; main.hit.value = 1;
+  });
+}
+function absorb(e, into) { e.mode = 'absorb'; e.target.copy(into ? into.p : CENTER); e.ts = 0; }
+function bump(m) { m.hit.value = Math.min(1, m.hit.value + 0.7); m.sv += 2.2 * MO; }
+function clearObjects() { if (main) { absorb(main, null); main = null; } ents.filter((e) => e.mode === 'launch').forEach((e) => absorb(e, null)); }
+
+/* ---------- soft bodies: size settles slowly like a cloud, shape wobbles like jelly ---------- */
+// every raised button and notice is one small spring body; the loop runs only while something is moving
+const moving = new Set(); let softRaf = 0, softLast = 0;
+function softTick(now) {
+  const dt = Math.min((now - softLast) / 1000, 1 / 30); softLast = now;
+  for (const m of [...moving]) if (!m.step(dt)) moving.delete(m);
+  softRaf = moving.size ? requestAnimationFrame(softTick) : 0;
+}
+function softWake(m) { moving.add(m); if (!softRaf) { softLast = performance.now(); softRaf = requestAnimationFrame(softTick); } }
+const spring = (o, key, target, k, c, dt) => { const v = key + 'v'; o[v] += (k * (target - o[key]) - c * o[v]) * dt; o[key] += o[v] * dt; };
+class Soft {
+  constructor(el) { this.el = el; this.q = this.qv = this.zv = this.x = this.xv = this.y = this.yv = 0; this.z = 1; this.tq = this.tx = this.ty = 0; this.tz = 1; this.down = false; }
+  get amt() { return this._amt ??= clamp(90 / (this.el.offsetHeight || 90), 0.35, 1); }   // a big card moves less than a small pill
+  stop() { this.el.style.transform = ''; this.el.classList.remove('soft-live'); this.z = 1; this.q = this.x = this.y = this.zv = this.qv = this.xv = this.yv = 0; return false; }
+  step(dt) {
+    if (this.el.hidden || !this.el.isConnected) return this.stop();
+    for (let i = 0; i < 2; i++) {
+      const h = dt / 2;
+      if (this.down) { spring(this, 'z', this.tz, 620, 34, h); spring(this, 'q', this.tq, 620, 30, h); spring(this, 'x', this.tx, 420, 28, h); spring(this, 'y', this.ty, 420, 28, h); }
+      else { spring(this, 'z', this.tz, 130, 13, h); spring(this, 'q', 0, 240, 7.5, h); spring(this, 'x', 0, 170, 10, h); spring(this, 'y', 0, 170, 10, h); }
+    }
+    const ax = Math.abs(this.x) * 0.006, ay = Math.abs(this.y) * 0.006;
+    this.el.style.transform = `translate(${this.x.toFixed(2)}px,${this.y.toFixed(2)}px) skewX(${(this.x * 0.3).toFixed(2)}deg) scale(${(this.z * (1 + this.q + ax - ay)).toFixed(4)},${(this.z * (1 - this.q + ay - ax)).toFixed(4)})`;
+    const still = Math.abs(this.z - this.tz) + Math.abs(this.q) + Math.abs(this.x) / 20 + Math.abs(this.y) / 20 + Math.abs(this.zv) + Math.abs(this.qv) < 0.002;
+    if (still && !this.down && this.tz === 1) return this.stop();
+    return !(still && !this.down);   // a hovered body rests at its swell, holding its transform
+  }
+  live() { this.el.classList.add('soft-live'); softWake(this); return this; }
+}
+const softs = new WeakMap();
+const softOf = (el) => softs.get(el) || (softs.set(el, new Soft(el)), softs.get(el));
+// a notice or popup puffs in: small and wide, then it fills out and wobbles to rest
+function softArrive(el, size = 1) {
+  if (reduceMotion) return;
+  const s = softOf(el); el.style.transformOrigin = el.classList.contains('pop') ? '' : '50% 50%';
+  s.down = false; s.tz = 1; s.z = 1 - 0.3 * size; s.zv = 0; s.q = 0.13 * size; s.qv = 0; s.live();
+}
+function softKick(el) { if (reduceMotion) return; const s = softOf(el); s.qv -= 1.5 * s.amt; s.zv += 0.5 * s.amt; s.live(); }
+if (!reduceMotion) {
+  const SOFT_BODY = '.press, .float, .tile.raised, .hill, .round, .controls button, .icon-btn';
+  const rub = (d, amt) => Math.sign(d) * (1 - 1 / (Math.abs(d) / 70 + 1)) * 16 * amt;   // follows the finger, less and less
+  let held = null, sx = 0, sy = 0;
+  let rect = null, last = null, queued = false;
+  const glow = (el, e) => { el.style.setProperty('--gx', `${(clamp((e.clientX - rect.left) / rect.width, 0, 1) * 100).toFixed(0)}%`); el.style.setProperty('--gy', `${(clamp((e.clientY - rect.top) / rect.height, 0, 1) * 100).toFixed(0)}%`); };
+  document.addEventListener('pointerdown', (e) => {
+    const el = e.target.closest?.(SOFT_BODY); if (!el) return;
+    const s = softOf(el); rect = el.getBoundingClientRect(); glow(el, e);
+    el.style.transformOrigin = `${el.style.getPropertyValue('--gx')} ${el.style.getPropertyValue('--gy')}`; el.classList.add('soft-held');
+    s.down = true; s.tz = 1 - 0.05 * s.amt; s.tq = 0.04 * s.amt; s.tx = s.ty = 0; held = s; sx = e.clientX; sy = e.clientY; s.live();
+  }, { passive: true });
+  window.addEventListener('pointermove', (e) => {
+    if (!held) return;
+    held.tx = rub(e.clientX - sx, held.amt); held.ty = rub(e.clientY - sy, held.amt);
+    last = e; if (!queued) { queued = true; requestAnimationFrame(() => { queued = false; if (held) glow(held.el, last); }); }
+  }, { passive: true });
+  const letGo = () => {
+    if (!held) return; const s = held; held = null;
+    s.down = false; s.tz = 1; s.tq = 0; s.tx = s.ty = 0; s.qv -= 1.6 * s.amt; s.zv += 0.7 * s.amt; s.el.classList.remove('soft-held'); s.live();
+  };
+  window.addEventListener('pointerup', letGo); window.addEventListener('pointercancel', letGo);
+  // a mouse swells the surface a little as it passes over
+  document.addEventListener('pointerover', (e) => {
+    if (e.pointerType !== 'mouse') return; const el = e.target.closest?.(SOFT_BODY); if (!el || el.contains(e.relatedTarget)) return;
+    const s = softOf(el); if (s.down) return; el.style.transformOrigin = '50% 50%'; s.tz = 1 + 0.02 * s.amt; s.live();
+  });
+  document.addEventListener('pointerout', (e) => {
+    if (e.pointerType !== 'mouse') return; const el = e.target.closest?.(SOFT_BODY); if (!el || el.contains(e.relatedTarget)) return;
+    const s = softOf(el); if (!s.down) { s.tz = 1; s.live(); }
+  });
+}
+// the selection itself travels: the leading edge runs ahead, the trailing edge catches up, the blob thins as it stretches
+class Glide {
+  constructor(group, from, to) {
+    this.group = group; this.from = from; this.g = document.createElement('i'); this.g.className = 'raised soft-glide'; this.g.setAttribute('aria-hidden', 'true');
+    this.g.style.borderRadius = getComputedStyle(to).borderRadius;
+    this.l = from.offsetLeft; this.r = this.l + from.offsetWidth; this.t = from.offsetTop; this.b = this.t + from.offsetHeight; this.lv = this.rv = this.tv = this.bv = 0;
+    from.classList.add('soft-ghost'); group.prepend(this.g); this.aim(to);
+  }
+  aim(to) {
+    this.to?.classList.remove('soft-ghost'); this.to = to; to.classList.add('soft-ghost');
+    this.L = to.offsetLeft; this.W = to.offsetWidth; this.T = to.offsetTop; this.H = to.offsetHeight; this.dir = this.L + this.W / 2 > (this.l + this.r) / 2 ? 1 : -1;
+    this.g.style.width = `${this.W}px`; this.g.style.height = `${this.H}px`; softWake(this);
+  }
+  end() { this.g.remove(); this.from.classList.remove('soft-ghost'); this.to.classList.remove('soft-ghost'); this.group._glide = null; return false; }
+  step(dt) {
+    if (!this.g.isConnected) return this.end();
+    const L = this.L, R = L + this.W, T = this.T, B = T + this.H;
+    for (let i = 0; i < 2; i++) {
+      const h = dt / 2, lead = [300, 19], trail = [120, 13];
+      spring(this, 'l', L, ...(this.dir < 0 ? lead : trail), h); spring(this, 'r', R, ...(this.dir > 0 ? lead : trail), h);
+      spring(this, 't', T, 200, 15, h); spring(this, 'b', B, 200, 15, h);
+    }
+    const w = this.r - this.l, thin = Math.max(0, w - this.W) * 0.09, top = this.t + thin, bot = this.b - thin;
+    this.g.style.transform = `translate(${this.l.toFixed(1)}px,${top.toFixed(1)}px) scale(${(w / this.W).toFixed(3)},${((bot - top) / this.H).toFixed(3)})`;
+    if (Math.abs(this.l - L) + Math.abs(this.r - R) + Math.abs(this.t - T) + Math.abs(this.b - B) + Math.abs(this.lv) + Math.abs(this.rv) < 0.6) return this.end();
+    return true;
+  }
+}
+function glideTo(group, from, to) {
+  if (reduceMotion || from === to) return;
+  if (group._glide?.g.isConnected) { group._glide.aim(to); return; }
+  if (!from) return;
+  if (getComputedStyle(group).position === 'static') group.style.position = 'relative';
+  group._glide = new Glide(group, from, to);
+}
+
+/* ---------- caption, halo, discoveries ---------- */
+const caption = $('#caption'), capName = $('#capName'), capParts = $('#capParts'), capHint = $('#capHint');
+let turnedOnce = store.get('turned', false), capKey = null, capTimer = 0;
+function setCaption(key) {
+  if (key === capKey) return; capKey = key;
+  caption.classList.add('swap'); clearTimeout(capTimer);
+  capTimer = setTimeout(() => {
+    if (!key) { capName.textContent = '소리 하나를 켜보세요'; capParts.textContent = '슬라이더를 밀면 그 소리가 오브제로 떠올라요'; }
+    else { capName.textContent = nameFor(key); capParts.textContent = isCombo(key) ? key.split('+').map(koOf).join(' + ') : ''; }
+    capHint.hidden = !key || turnedOnce;
+    caption.classList.remove('swap');
+  }, 260);
+  const def = key ? defFor(key) : null;
+  halo.style.setProperty('--halo', def ? def.glowA : 'transparent');
+  halo.style.setProperty('--halo-a', def ? 0.55 : 0);
+  if (lockOpen) renderLock();
+}
+const toast = $('#toast'); let toastTimer = 0;
+function discover(key) {
+  const f = state.found[state.theme] || (state.found[state.theme] = []);
+  if (f.includes(key)) return;
+  f.push(key); store.set('found', state.found);
+  $('#toastCount').textContent = `${f.length} / 15`;
+  if (toast.hidden) { toast.hidden = false; softArrive(toast); } else softKick(toast);
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => { toast.hidden = true; }, 2800);
+}
+
+/* ---------- jelly sliders: a thin bar that swells into a drop at its value ---------- */
+const hex = (h) => { const n = parseInt(h.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; };
+const mix = (a, b, k) => a.map((x, i) => Math.round(x + (b[i] - x) * k));
+const rgb = (c, a = 1) => `rgb(${c[0]} ${c[1]} ${c[2]} / ${a})`;
+const lerp = (a, b, k) => a + (b - a) * k;
+function jellyPath(x0, xe, th, r, neck, cy) {
+  const f = (v) => v.toFixed(2), k = 0.5523;
+  if (th < 0.6 || xe - neck <= x0 + 1) return `M ${f(xe - r)} ${f(cy)} a ${f(r)} ${f(r)} 0 1 0 ${f(2 * r)} 0 a ${f(r)} ${f(r)} 0 1 0 ${f(-2 * r)} 0 Z`;
+  const n0 = xe - neck, a = cy - th / 2, b = cy + th / 2, c1 = n0 + neck * 0.55, c2 = n0 + neck * 0.62;
+  return `M ${f(x0)} ${f(a)} L ${f(n0)} ${f(a)} C ${f(c1)} ${f(a)} ${f(c2)} ${f(cy - r)} ${f(xe)} ${f(cy - r)} C ${f(xe + r * k)} ${f(cy - r)} ${f(xe + r)} ${f(cy - r * k)} ${f(xe + r)} ${f(cy)} `
+    + `C ${f(xe + r)} ${f(cy + r * k)} ${f(xe + r * k)} ${f(cy + r)} ${f(xe)} ${f(cy + r)} C ${f(c2)} ${f(cy + r)} ${f(c1)} ${f(b)} ${f(n0)} ${f(b)} L ${f(x0)} ${f(b)} A ${f(th / 2)} ${f(th / 2)} 0 0 1 ${f(x0)} ${f(a)} Z`;
+}
+const sliders = {}, activeSliders = new Set();
+let sid = 0;
+class Jelly {
+  constructor(track, value, onChange) {
+    this.t = track; this.v = value; this.onChange = onChange; this.id = 'j' + (++sid);
+    const A = hex(track.glowA), B = hex(track.glowB), body = hex(track.body);
+    const start = mix(B, body, 0.5), end = mix(A, body, 0.45), core = mix(A, body, 0.2);
+    this.el = document.createElement('div'); this.el.className = 'row';
+    this.el.innerHTML = `<div class="row-head"><b>${track.label}</b><span>${track.ko}</span><span class="val"></span></div>
+      <div class="track" role="slider" tabindex="0" aria-label="${track.ko} 볼륨" aria-valuemin="0" aria-valuemax="100" style="--glow:${rgb(A, 0.3)}">
+        <svg><defs><linearGradient id="${this.id}g" x1="0" x2="1"><stop offset="0" stop-color="${rgb(start)}"/><stop offset="1" stop-color="${rgb(end)}"/></linearGradient>
+        <radialGradient id="${this.id}r"><stop offset="0" stop-color="${rgb(core)}"/><stop offset=".6" stop-color="${rgb(mix(core, end, 0.6))}"/><stop offset="1" stop-color="${rgb(end)}" stop-opacity="0"/></radialGradient></defs>
+        <rect class="rail" x="6" height="4" rx="2" style="fill:var(--rail)"/><g class="jelly" opacity=".9"><path fill="url(#${this.id}g)"/><circle fill="url(#${this.id}r)"/></g></svg></div>`;
+    this.track = this.el.querySelector('.track'); this.svg = this.el.querySelector('svg'); this.path = this.el.querySelector('path'); this.core = this.el.querySelector('circle');
+    this.rail = this.el.querySelector('.rail'); this.val = this.el.querySelector('.val');
+    this.W = 300; this.end = null; this.endV = 0; this.touch = 0; this.touchV = 0; this.drag = false;
+    new ResizeObserver(() => { this.W = this.track.clientWidth; if (this.W < 40) return; this.svg.setAttribute('viewBox', `0 0 ${this.W} 34`); this.rail.setAttribute('width', this.W - 12); this.rail.setAttribute('y', 15); if (this.end === null) this.end = this.target(); this.wake(); }).observe(this.track);
+    this.text(); this.bind();
+  }
+  get x0() { return 8; } get x1() { return this.W - 16; }
+  target() { return this.x0 + this.v * (this.x1 - this.x0); }
+  levelAt(clientX) { const r = this.track.getBoundingClientRect(); return clamp((clientX - r.left - this.x0) / (this.x1 - this.x0), 0, 1); }
+  text() { const p = Math.round(this.v * 100); this.val.textContent = p ? p : '꺼짐'; this.val.classList.toggle('off', !p); this.track.setAttribute('aria-valuenow', p); this.track.setAttribute('aria-valuetext', p ? p + '%' : '꺼짐'); }
+  set(v, user = true) {
+    v = clamp(v, 0, 1); if (v < 0.015) v = 0;
+    const prev = this.v; this.v = v; this.text(); this.wake();
+    if (user && prev !== v) this.onChange(v, prev);
+  }
+  wake() { activeSliders.add(this); }
+  bind() {
+    const t = this.track; let downX = 0, moved = false, longFired = false, timer = 0;
+    t.addEventListener('pointerdown', (e) => {
+      startAudio(); try { t.setPointerCapture(e.pointerId); } catch (_) {}
+      downX = e.clientX; moved = false; longFired = false; this.drag = true; this.wake();
+      clearTimeout(timer); timer = setTimeout(() => { if (!moved) { longFired = true; this.drag = false; openTexture(this); } }, 480);
+    });
+    t.addEventListener('pointermove', (e) => {
+      if (!this.drag) return;
+      if (!moved && Math.abs(e.clientX - downX) > 6) { moved = true; clearTimeout(timer); }
+      if (moved) this.set(this.levelAt(e.clientX));
+    });
+    const up = (e) => { clearTimeout(timer); if (this.drag && !moved && !longFired && e.type === 'pointerup') this.set(this.levelAt(e.clientX)); this.drag = false; this.wake(); };
+    t.addEventListener('pointerup', up); t.addEventListener('pointercancel', up);
+    t.addEventListener('keydown', (e) => {
+      const d = { ArrowRight: 0.05, ArrowUp: 0.05, ArrowLeft: -0.05, ArrowDown: -0.05 }[e.key];
+      if (d) { e.preventDefault(); startAudio(); this.set(this.v + d); }
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openTexture(this); }
+    });
+  }
+  tick(dt) {
+    const tgt = this.target(); if (this.end === null) this.end = tgt;
+    const prev = this.end;
+    this.endV += (-360 * (this.end - tgt) - 24 * this.endV) * dt; this.end += this.endV * dt;
+    this.touchV += (-260 * (this.touch - (this.drag ? 1 : 0)) - 16 * this.touchV) * dt; this.touch += this.touchV * dt;
+    const speed = Math.abs((this.end - prev) / Math.max(dt, 1e-3));
+    const on = clamp((this.end - this.x0) / 14, 0, 1), tc = clamp(this.touch, 0, 1.3);
+    const r = lerp(5, lerp(7, 10, tc) * (1 + Math.min(0.22, speed / 4000)), on);
+    const neck = lerp(0, lerp(24, 34, tc) + Math.min(16, speed * 0.012), on), th = lerp(0, lerp(4, 6, tc), on);
+    const xe = Math.max(this.end, this.x0 + r - 2);
+    this.path.setAttribute('d', jellyPath(this.x0, xe, th, r, neck, 17));
+    this.core.setAttribute('cx', xe.toFixed(2)); this.core.setAttribute('cy', 17); this.core.setAttribute('r', (r * 1.25).toFixed(2));
+    this.svg.querySelector('.jelly').setAttribute('opacity', this.v === 0 && on < 0.05 ? 0.75 : 0.9);
+    return this.drag || Math.abs(this.end - tgt) > 0.05 || Math.abs(this.endV) > 0.5 || Math.abs(this.touch - (this.drag ? 1 : 0)) > 0.003 || Math.abs(this.touchV) > 0.01;
+  }
+}
+const rows = $('#rows');
+function renderRows() {
+  rows.innerHTML = ''; for (const k of Object.keys(sliders)) delete sliders[k];
+  for (const t of theme().tracks) {
+    const s = new Jelly(t, levels()[t.id] || 0, (v, prev) => onLevel(t.id, v, prev));
+    sliders[t.id] = s; rows.appendChild(s.el);
+  }
+  rows.style.display = 'grid'; rows.style.gap = '6px';
+}
+function onLevel(id, v, prev) {
+  levels()[id] = v; sound.setLevel(id, v); state.preset = null;
+  if (prev === 0 && v > 0) launch(id); else if (prev > 0 && v === 0) eject(id);
+  else if (main) main.hit.value = Math.max(main.hit.value, 0.18);
+  if (lockOpen) renderLock();
+}
+function setLevels(map) { for (const id of theme().ids) sliders[id].set(map[id] || 0); }
+$('#allOff').addEventListener('click', () => setLevels({}));
+
+/* ---------- audio starts on the first touch ---------- */
+function startAudio() { sound.init(); }
+document.addEventListener('pointerdown', startAudio, { passive: true });
+document.addEventListener('touchstart', () => {}, { passive: true });   // lets :active show on iOS
+
+/* ---------- light and dark ---------- */
+const isDark = () => { const t = document.documentElement.dataset.theme; return t ? t === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches; };
+function applyMode() { const d = isDark(); U.dark.value = d ? 1 : 0; setIcon($('#mode'), d ? 'sun' : 'moon'); $('#mode').setAttribute('aria-label', d ? '라이트 모드' : '다크 모드'); }
+// the app opens in light; a choice made with the mode button is remembered
+document.documentElement.dataset.theme = store.get('mode', 'light') === 'dark' ? 'dark' : 'light';
+$('#mode').addEventListener('click', () => { const next = isDark() ? 'light' : 'dark'; document.documentElement.dataset.theme = next; store.set('mode', next); applyMode(); });
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyMode);
+applyMode();
+
+/* ---------- theme switch ---------- */
+function setTheme(t, map) {
+  if (t === state.theme && !map) return;
+  for (const id of theme().ids) sound.setLevel(id, 0);
+  clearObjects();
+  state.theme = t; store.set('theme', t); document.documentElement.dataset.onda = t;
+  if (map) state.levels[t] = { ...map };
+  renderRows(); setCaption('');
+  const on = theme().ids.filter((id) => (levels()[id] || 0) > 0);
+  on.forEach((id, i) => { sound.setLevel(id, levels()[id]); setTimeout(() => launch(id), 160 + i * 140); });
+  warm(t);
+}
+
+/* ---------- popups ---------- */
+const veil = $('#veil'), menu = $('#menu'), tex = $('#texture');
+let openPop = null;
+function showPop(el) { closePop(); openPop = el; veil.hidden = false; el.hidden = false; softArrive(el, 0.45); if (el === menu) { $('#openMenu').setAttribute('aria-expanded', 'true'); $('#app').classList.add('menu-open'); } }
+function closePop() {
+  if (!openPop) return; openPop.hidden = true; veil.hidden = true;
+  if (openPop === menu) { $('#openMenu').setAttribute('aria-expanded', 'false'); $('#app').classList.remove('menu-open'); collapseSave(); }
+  if (openPop === tex && texFor) { texFor.el.classList.remove('lifted'); texFor = null; }
+  openPop = null;
+}
+veil.addEventListener('click', closePop);
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { closePop(); closeCollection(); } });
+
+// menu: theme, sleep timer, presets
+$('#openMenu').addEventListener('click', () => { if (openPop === menu) return closePop(); renderMenu(); showPop(menu); });
+function choice(label, on, onClick, cls = 'choice') {
+  const b = document.createElement('button'); b.type = 'button'; b.className = `${cls} press ${on ? 'raised is-on' : 'flat'}`;
+  b.setAttribute('role', 'radio'); b.setAttribute('aria-checked', on); b.innerHTML = label; b.addEventListener('click', onClick); return b;
+}
+function lift(group, btn) { glideTo(group, group.querySelector('[role=radio].is-on'), btn); group.querySelectorAll('[role=radio]').forEach((b) => { const on = b === btn; b.classList.toggle('raised', on); b.classList.toggle('flat', !on); b.classList.toggle('is-on', on); b.setAttribute('aria-checked', on); }); }
+const levelText = (map, t) => THEMES[t].ids.filter((id) => map[id] > 0).map((id) => `${koOf(id)} ${Math.round(map[id] * 100)}`).join(', ');
+function renderMenu() {
+  const th = $('#themes'); th.innerHTML = '';
+  for (const t of ['nature', 'city', 'noise']) {
+    const b = choice(`<img src="thumbs/icon-${t}.webp" alt="">`, t === state.theme, () => { lift(th, b); setTheme(t); renderPresets(); }, 'theme-btn');
+    b.setAttribute('aria-label', THEMES[t].name); th.appendChild(b);
+  }
+  renderTimerChoices($('#timerChoices'));
+  renderPresets(); $('#saveHint').hidden = true;
+}
+// the same four choices live in the menu and in the lock screen list
+function renderTimerChoices(box, after = () => {}) {
+  box.innerHTML = '';
+  for (const [label, m] of [['끄기', 0], ['15분', 15], ['30분', 30], ['1시간', 60]]) {
+    const b = choice(label, state.timerMin === m, () => { lift(box, b); setTimer(m); after(); }); box.appendChild(b);
+  }
+}
+function renderPresets() {
+  const box = $('#presets'); box.innerHTML = '';
+  for (const p of presetsOf(state.theme)) {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'preset' + (state.preset === p.name ? ' is-on' : '');
+    b.innerHTML = `<img src="${thumb(p.icon)}" alt=""><span><b>${p.name}</b><small>${levelText(p.levels, state.theme)}</small></span>`;
+    b.addEventListener('click', () => { applyPreset(p); closePop(); });
+    box.appendChild(b);
+  }
+}
+function applyPreset(p) { startAudio(); if (state.paused) togglePause(); setLevels(p.levels); state.preset = p.name; if (lockOpen) renderLock(); }
+
+// save the current mix: the popup grows downward with a name and an icon
+const saveExpand = $('#saveExpand'), saveOpen = $('#saveOpen');
+let pickIcon = null;
+$('#presetName').addEventListener('focus', (e) => e.target.select());
+saveOpen.addEventListener('click', () => {
+  const key = activeKey(), empty = !key, first = key || theme().ids[0];
+  const pick = $('#iconPick'); pick.innerHTML = '';
+  const opts = [first, ...theme().ids.filter((id) => id !== first), ...theme().keys.filter((k) => isCombo(k) && k !== first)].slice(0, 6);
+  pickIcon = first;
+  for (const k of opts) { const b = choice(`<img src="${thumb(k)}" alt="">`, k === first, () => { lift(pick, b); pickIcon = k; }, ''); b.setAttribute('aria-label', nameFor(k)); pick.appendChild(b); }
+  const name = $('#presetName'); name.value = empty ? '' : nameFor(key); name.placeholder = '새 프리셋';
+  // with every sound off there is nothing to keep: the panel still opens, says so, and saving waits
+  $('#saveHint').hidden = !empty; $('#saveConfirm').disabled = empty;
+  saveExpand.classList.add('open'); saveOpen.hidden = true;
+  setTimeout(() => { menu.scrollTo({ top: menu.scrollHeight, behavior: 'smooth' }); }, 380);   // no autofocus: the keyboard would jump over the panel and the first focus stalls a frame for seconds
+});
+function collapseSave() { saveExpand.classList.remove('open'); saveOpen.hidden = false; $('#saveHint').hidden = true; }
+$('#saveCancel').addEventListener('click', collapseSave);
+$('#saveConfirm').addEventListener('click', () => {
+  if (!activeKey()) return;
+  const name = $('#presetName').value.trim() || nameFor(activeKey());
+  const map = {}; theme().ids.forEach((id) => { if (levels()[id] > 0) map[id] = Math.round(levels()[id] * 100) / 100; });
+  state.saved = state.saved.filter((p) => !(p.theme === state.theme && p.name === name));
+  state.saved.push({ theme: state.theme, name, icon: pickIcon, levels: map }); store.set('presets', state.saved);
+  state.preset = name; collapseSave(); renderPresets();
+});
+$('#presetName').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('#saveConfirm').click(); });
+
+// 소리 결: long-press a slider and the choices rise above it
+let texFor = null;
+function openTexture(s) {
+  texFor = s; const id = s.t.id;
+  $('#texTitle').innerHTML = `${s.t.ko}<span>소리 결</span>`;
+  const box = $('#texChoices'); box.innerHTML = '';
+  TEXTURES[id].forEach((label, i) => { const b = choice(label, sound.texture(id) === i, () => { lift(box, b); sound.setTexture(id, i); if (main) bump(main); setTimeout(closePop, 420); }); box.appendChild(b); });
+  showPop(tex); texFor = s; s.el.classList.add('lifted');
+  const app = $('#app').getBoundingClientRect(), row = s.el.getBoundingClientRect();
+  tex.style.top = Math.max(70, row.top - app.top - tex.offsetHeight - 10) + 'px';
+}
+
+/* ---------- sleep timer ---------- */
+const pill = $('#timerPill'); let fading = false;
+function setTimer(m) {
+  state.timerMin = m; state.timerEnd = m ? Date.now() + m * 60000 : 0; fading = false;
+  if (!m) { pill.hidden = true; sound.fadeTo(state.paused ? 0 : 1, 0.6); } else tickTimer();
+}
+function fmt(ms) { const s = Math.max(0, Math.ceil(ms / 1000)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; }
+function tickTimer() {
+  if (!state.timerEnd) return;
+  const left = state.timerEnd - Date.now();
+  if (left <= 0 && !fading) {
+    fading = true; sound.fadeTo(0, 20);   // the sound sinks away slowly instead of stopping
+    setTimeout(() => { if (!fading) return; setLevels({}); state.timerMin = 0; state.timerEnd = 0; pill.hidden = true; fading = false; sound.fadeTo(1, 0.2); if (lockOpen) renderLock(); }, 20000);
+  }
+  if (pill.hidden) { pill.hidden = false; softArrive(pill); }
+  $('#timerText').textContent = left > 0 ? `${fmt(left)} 뒤에 천천히 꺼져요` : '천천히 꺼지는 중';
+  if (lockOpen) $('#lockSub').textContent = lockSub();
+}
+setInterval(tickTimer, 1000);
+pill.addEventListener('click', () => { renderMenu(); showPop(menu); });
+
+/* ---------- collection ---------- */
+const col = $('#collection');
+$('#openCollection').addEventListener('click', () => { renderCollection(); col.hidden = false; col.scrollTop = 0; });
+$('#closeCollection').addEventListener('click', closeCollection);
+function closeCollection() { col.hidden = true; }
+const HILL_SPOTS = [[8, 10, 40], [54, 6, 32], [34, 40, 38], [8, 56, 26], [62, 44, 30], [74, 12, 22]];
+function renderCollection() {
+  const th = theme(), found = state.found[state.theme] || [];
+  $('#colCount').textContent = `${found.length} / 15`;
+  $('#colTitle').innerHTML = `15개 중 ${found.length}개를<br>찾았어요`;
+  const box = $('#groups'); box.innerHTML = '';
+  ['소리 하나', '소리 둘', '소리 셋', '소리 넷'].forEach((gname, gi) => {
+    const keys = th.keys.filter((k) => k.split('+').length === gi + 1), have = keys.filter((k) => found.includes(k));
+    const g = document.createElement('section'); g.className = 'group';
+    const complete = have.length === keys.length && keys.length > 1;
+    g.innerHTML = `<div class="group-head"><b>${gname}</b><span>${have.length} / ${keys.length}</span>${complete ? '<span>모두 모았어요</span>' : ''}</div>`;
+    if (complete) {
+      const hill = document.createElement('div'); hill.className = 'hill raised';
+      hill.innerHTML = '<div class="inside"></div>' + `<div class="names">${keys.map(nameFor).join(', ')}</div>`;
+      keys.forEach((k, i) => { const [x, y, w] = HILL_SPOTS[i % HILL_SPOTS.length]; hill.firstChild.insertAdjacentHTML('beforeend', `<img src="${thumb(k)}" alt="${nameFor(k)}" style="left:${x}%;top:${y}%;width:${w}%;animation-delay:${-i * 1.3}s;animation-duration:${5 + i}s">`); });
+      g.appendChild(hill);
+    } else {
+      const tiles = document.createElement('div'); tiles.className = 'tiles';
+      for (const k of keys) {
+        const ok = found.includes(k), t = document.createElement('div');
+        t.className = `tile ${ok ? 'raised' : 'sunken locked'}${gi === 3 ? ' wide' : ''}`;
+        t.innerHTML = `<img src="${thumb(k)}" alt=""><b>${ok ? nameFor(k) : gi === 3 ? '네 가지 소리를 모두 켜면 나타나요' : '미발견'}</b>`;
+        tiles.appendChild(t);
+      }
+      g.appendChild(tiles);
+    }
+    box.appendChild(g);
+  });
+}
+
+/* ---------- swipe up: the app goes away, the sound stays ---------- */
+const shell = $('#shell'), lock = $('#lock');
+let lockOpen = false;
+(() => {
+  const zone = $('#swipe'); let y0 = 0, t0 = 0, dy = 0, live = false;
+  zone.addEventListener('pointerdown', (e) => { live = true; y0 = e.clientY; t0 = performance.now(); dy = 0; shell.style.transition = 'none'; try { zone.setPointerCapture(e.pointerId); } catch (_) {} });
+  zone.addEventListener('pointermove', (e) => {
+    if (!live) return; dy = Math.min(0, e.clientY - y0);
+    const k = Math.abs(dy);
+    shell.style.transform = `translateY(${dy * 0.6}px) scale(${1 - Math.min(0.22, k / 1400)})`;
+    shell.style.borderRadius = Math.min(44, k / 4) + 'px';
+  });
+  const end = () => {
+    if (!live) return; live = false;
+    const v = dy / Math.max(1, performance.now() - t0);
+    if (dy < -110 || v < -0.6) closeApp(); else { shell.style.transition = 'transform .6s var(--spring), border-radius .6s var(--soft)'; shell.style.transform = ''; shell.style.borderRadius = ''; }
+  };
+  zone.addEventListener('pointerup', end); zone.addEventListener('pointercancel', end);
+  zone.addEventListener('click', () => {});
+})();
+const LOCK_BG = { nature: ['#0f1c34', '#1c1c42', '#2f2449'], city: ['#1e1a33', '#2c1f3e', '#3d2741'], noise: ['#0c1f29', '#12293a', '#1c2c46'] };
+function closeApp() {
+  closePop(); closeCollection();
+  shell.style.transition = 'transform .7s var(--soft), opacity .5s var(--soft), border-radius .6s var(--soft)';
+  shell.style.transform = 'translateY(-62%) scale(.7)'; shell.style.opacity = '0'; shell.style.borderRadius = '44px';
+  const [a, b, c] = LOCK_BG[state.theme]; lock.style.setProperty('--l-a', a); lock.style.setProperty('--l-b', b); lock.style.setProperty('--l-c', c);
+  lockOpen = true; renderLock(); setTimeout(() => { lock.hidden = false; }, 180);
+}
+function openApp() {
+  lockOpen = false; lock.hidden = true; $('#lockList').hidden = true;
+  shell.style.transition = 'none'; shell.style.transform = 'translateY(-24%) scale(.86)'; shell.style.opacity = '0';
+  requestAnimationFrame(() => requestAnimationFrame(() => { shell.style.transition = 'transform .8s var(--spring), opacity .45s var(--soft), border-radius .6s var(--soft)'; shell.style.transform = ''; shell.style.opacity = ''; shell.style.borderRadius = ''; }));
+}
+$('#openApp').addEventListener('click', openApp);
+// comp only: swipe the lock screen up to come back to the app
+(() => {
+  let y0 = 0, t0 = 0, dy = 0, live = false;
+  lock.addEventListener('pointerdown', (e) => {
+    if (e.target.closest('button')) return;
+    live = true; y0 = e.clientY; t0 = performance.now(); dy = 0; lock.style.transition = 'none';
+    try { lock.setPointerCapture(e.pointerId); } catch (_) {}
+  });
+  lock.addEventListener('pointermove', (e) => {
+    if (!live) return; dy = Math.min(0, e.clientY - y0);
+    lock.style.transform = `translateY(${dy * 0.7}px)`; lock.style.opacity = String(1 - Math.min(0.6, -dy / 600));
+  });
+  const end = () => {
+    if (!live) return; live = false;
+    const v = dy / Math.max(1, performance.now() - t0);
+    lock.style.transition = 'transform .55s var(--soft), opacity .5s var(--soft)';
+    if (dy < -90 || v < -0.6) { lock.style.transform = 'translateY(-40%)'; lock.style.opacity = '0'; setTimeout(() => { openApp(); lock.style.transform = ''; lock.style.opacity = ''; }, 260); }
+    else { lock.style.transform = ''; lock.style.opacity = ''; }
+  };
+  lock.addEventListener('pointerup', end); lock.addEventListener('pointercancel', end);
+})();
+const lockSub = () => (state.timerEnd ? `ONDA, ${fmt(state.timerEnd - Date.now())} 뒤에 꺼져요` : state.paused ? 'ONDA, 일시정지됨' : 'ONDA, 재생 중');
+function renderLock() {
+  const key = activeKey();
+  const title = state.preset || (key ? nameFor(key) : '소리 없음');
+  const img = key ? thumb(key) : `thumbs/icon-${state.theme}.webp`;
+  $('#lockThumb').src = img; $('#lockArt').src = img; $('#lockTitle').textContent = title; $('#lockSub').textContent = lockSub();
+  const d = new Date();
+  $('#lockTime').textContent = `${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`;
+  $('#lockDate').textContent = d.toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', weekday: 'long' });
+  const box = $('#lockPresets'); box.innerHTML = '';
+  for (const p of presetsOf(state.theme)) {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'preset' + (state.preset === p.name ? ' is-on' : '');
+    b.innerHTML = `<img src="${thumb(p.icon)}" alt=""><span><b>${p.name}</b><small>${levelText(p.levels, state.theme)}</small></span>${state.preset === p.name ? icon('check').replace('<svg', '<svg class="check"') : ''}`;
+    b.addEventListener('click', () => { applyPreset(p); toggleLockList(false); });
+    box.appendChild(b);
+  }
+  renderTimerChoices($('#lockTimer'), () => { $('#lockSub').textContent = lockSub(); });
+}
+setInterval(() => { if (lockOpen) { const d = new Date(); $('#lockTime').textContent = `${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`; } }, 15000);
+function toggleLockList(force) {
+  const l = $('#lockList'), show = force ?? l.hidden;
+  l.hidden = !show; document.querySelector('.lock-clock').style.opacity = show ? 0.45 : 1;
+  if (show) { const pl = document.querySelector('.player'); l.style.top = 'auto'; l.style.bottom = (lock.clientHeight - pl.offsetTop + 12) + 'px'; }
+}
+$('#lockListBtn').addEventListener('click', () => toggleLockList());
+function stepPreset(d) { const list = presetsOf(state.theme); const i = list.findIndex((p) => p.name === state.preset); applyPreset(list[(i + d + list.length) % list.length]); }
+$('#prevPreset').addEventListener('click', () => stepPreset(-1));
+$('#nextPreset').addEventListener('click', () => stepPreset(1));
+function togglePause() {
+  state.paused = !state.paused; sound.fadeTo(state.paused ? 0 : 1, 0.5);
+  const b = $('#playPause'); setIcon(b, state.paused ? 'play' : 'pause'); b.setAttribute('aria-label', state.paused ? '재생' : '일시정지');
+  if (lockOpen) $('#lockSub').textContent = lockSub();
+}
+$('#playPause').addEventListener('click', togglePause);
+
+/* ---------- turn the object; a tap makes it bounce ---------- */
+const userQ = new THREE.Quaternion(), turnV = V3(0, 0, 0), X_AXIS = V3(1, 0, 0), Y_AXIS = V3(0, 1, 0);
+let turning = null, resetting = false;
+function turnBy(axis, angle) { if (angle) userQ.premultiply(new THREE.Quaternion().setFromAxisAngle(axis, angle)).normalize(); }
+function markTurned() { if (turnedOnce) return; turnedOnce = true; store.set('turned', true); capHint.style.opacity = 0; setTimeout(() => { capHint.hidden = true; capHint.style.opacity = ''; }, 600); }
+canvas.addEventListener('pointerdown', (e) => {
+  turning = { x: e.clientX, y: e.clientY, t: performance.now(), x0: e.clientX, y0: e.clientY, t0: performance.now(), moved: 0 }; resetting = false; turnV.set(0, 0, 0);
+  try { canvas.setPointerCapture(e.pointerId); } catch (_) {}
+  stage.classList.add('turning');
+});
+canvas.addEventListener('pointermove', (e) => {
+  if (!turning) return;
+  const now = performance.now(), dx = e.clientX - turning.x, dy = e.clientY - turning.y, len = Math.hypot(dx, dy);
+  if (!len) return;
+  turning.moved = Math.max(turning.moved, Math.hypot(e.clientX - turning.x0, e.clientY - turning.y0));
+  if (turning.moved < 6) return;
+  const axis = V3(dy / len, dx / len, 0), angle = len * (Math.PI / Math.max(240, stage.clientWidth * 0.6));
+  turnBy(axis, angle); turnV.copy(axis).multiplyScalar(angle / Math.max(0.008, (now - turning.t) / 1000));
+  Object.assign(turning, { x: e.clientX, y: e.clientY, t: now });
+  if (main) main.hit.value = Math.max(main.hit.value, 0.15);
+  markTurned();
+});
+const tapRay = new THREE.Raycaster(), tapNdc = V2(0, 0), tapHit = V3(0, 0, 0);
+function tapped(ev) {
+  if (!main || main.s < 0.05) return;
+  const r = canvas.getBoundingClientRect();
+  tapNdc.set(((ev.clientX - r.left) / r.width) * 2 - 1, -((ev.clientY - r.top) / r.height) * 2 + 1);
+  tapRay.setFromCamera(tapNdc, camera);
+  if (tapRay.ray.intersectSphere(new THREE.Sphere(main.p, main.s * 1.05), tapHit)) { main.sqv += 9 * MO; main.hopV = BASE * 4.2 * MO + 0.4; main.hit.value = Math.min(1, main.hit.value + 0.6); }
+}
+const endTurn = (ev) => {
+  if (!turning) return;
+  if (ev && ev.type === 'pointerup' && turning.moved < 6 && performance.now() - turning.t0 < 350) tapped(ev);
+  if (performance.now() - turning.t > 80 || reduceMotion) turnV.set(0, 0, 0);
+  if (turnV.length() > 10) turnV.setLength(10);
+  turning = null; stage.classList.remove('turning');
+};
+canvas.addEventListener('pointerup', endTurn); canvas.addEventListener('pointercancel', endTurn);
+canvas.addEventListener('dblclick', () => { resetting = true; turnV.set(0, 0, 0); });
+
+/* ---------- build shapes ahead of time, one per idle moment ---------- */
+// building a shape is heavy on a phone, so it waits until the intro is over and then takes one shape at a time with a pause between
+const warmQueue = [];
+let warmReady = false;
+function warm(t) {
+  if (geoWorker) { THEMES[t].keys.forEach((k) => withGeo(k, () => {})); return; }   // the worker builds them in the background, in order
+  warmQueue.unshift(...THEMES[t].keys.filter((k) => !geoCache[k]));
+}
+(function warmLoop() {
+  if (geoWorker) return;
+  if (warmReady) { const k = warmQueue.shift(); if (k && !geoCache[k]) { try { geoFor(k); } catch (e) { /* skip a shape that fails */ } } }
+  setTimeout(() => (window.requestIdleCallback ? requestIdleCallback(warmLoop, { timeout: 2500 }) : warmLoop()), warmReady ? 600 : 500);
+})();
+
+/* ---------- loop ---------- */
+const clock = new THREE.Clock(), idleE = new THREE.Euler(), ID = new THREE.Quaternion(), tmpV = V3(0, 0, 0);
+let rendered = false;
+let frameNo = 0, popFrames = 0, lastDraw = 0, slowAvg = 0, lastDrop = 0, pixelRatio = Math.min(devicePixelRatio, 1.5);
+function loop() {
+  requestAnimationFrame(loop);
+  const dt = Math.min(clock.getDelta(), 1 / 30), t = clock.elapsedTime;
+  // nothing of the 3D space is visible: keep only the sliders moving
+  if (document.hidden || lockOpen || !col.hidden) { for (const s of [...activeSliders]) if (!s.tick(dt)) activeSliders.delete(s); return; }
+  U.time.value = t * MO;
+  for (const s of [...activeSliders]) if (!s.tick(dt)) activeSliders.delete(s);
+  if (resetting) { userQ.slerp(ID, Math.min(1, dt * 5)); if (userQ.angleTo(ID) < 0.002) { userQ.identity(); resetting = false; } }
+  else if (!turning && turnV.lengthSq() > 1e-6) { const sp = turnV.length(); turnBy(tmpV.copy(turnV).divideScalar(sp), sp * dt); turnV.multiplyScalar(Math.exp(-dt * 2.4)); }
+  for (const e of [...ents]) {
+    e.t += dt;
+    if (e.mode === 'launch') {
+      tmpV.copy(CENTER).sub(e.p).multiplyScalar(11).addScaledVector(e.v, -4.2);
+      e.v.addScaledVector(tmpV, dt); e.p.addScaledVector(e.v, dt);
+      if ((e.t > 0.5 && e.p.distanceTo(CENTER) < BASE * 0.5) || e.t > 1.4) arrive(e);
+    } else if (e.mode === 'absorb') {
+      e.p.lerp(e.target, Math.min(1, dt * 7));
+    } else if (e.mode === 'leave') {
+      e.v.y -= 14 * dt; e.p.addScaledVector(e.v, dt); e.p.x += (slotX(e.key) - e.p.x) * Math.min(1, dt * 3);
+      if (e.p.y < -VH - BASE * 1.2) { removeEntity(e); continue; }
+    } else if (e.mode === 'main') {
+      e.ts = mainScale();
+      e.p.x += (CENTER.x - e.p.x) * Math.min(1, dt * 4);
+      e.p.y += (CENTER.y + Math.sin(t * 0.8 + e.phase) * 0.06 * MO - e.p.y) * Math.min(1, dt * 4);
+    }
+    const k = e.mode === 'absorb' ? 220 : 130, c = e.mode === 'absorb' ? 28 : 10;
+    e.sv += (-k * (e.s - e.ts) - c * e.sv) * dt; e.s = Math.max(0, e.s + e.sv * dt);
+    if (e.mode === 'absorb' && e.s < 0.01 && e.t > 0.2) { removeEntity(e); continue; }
+    if (e.hop > 0 || e.hopV !== 0) { e.hopV -= BASE * 22 * dt; e.hop += e.hopV * dt; if (e.hop <= 0) { e.hop = 0; if (e.hopV < -0.5) e.sqv += Math.min(8, -e.hopV * 1.6) * MO; e.hopV = 0; } }
+    e.sqv += (-170 * e.sq - 9 * e.sqv) * dt; e.sq = clamp(e.sq + e.sqv * dt, -0.35, 0.45);
+    e.holder.position.set(e.p.x, e.p.y + e.hop, e.p.z);
+    const sz = Math.max(e.s, 1e-4);
+    e.holder.scale.set(sz * (1 + 0.18 * e.sq), sz * (1 - 0.28 * e.sq), sz * (1 + 0.18 * e.sq));
+    e.holder.visible = e.s > 0.002;
+    idleE.set(0, Math.sin(t * 0.35 + e.phase) * 0.4 * MO, Math.sin(t * 0.27 + e.phase) * 0.06 * MO);
+    e.spin.quaternion.setFromEuler(idleE).premultiply(userQ);
+    e.hit.value *= Math.exp(-dt * 1.8);
+    e.amp.value = MO * 0.8;
+  }
+  // the object only drifts when nobody touches it: half the frames are enough, and the interface keeps the other half.
+  // under a popup it is blurred away, so a still picture lets the browser reuse the blur
+  frameNo++;
+  const calm = !turning && !resetting && ents.every((e) => e.mode === 'main' && Math.abs(e.sv) < 0.02 && e.hop === 0 && Math.abs(e.sqv) < 0.05 && e.hit.value < 0.02);
+  popFrames = openPop ? popFrames + 1 : 0;
+  if (rendered && calm && (popFrames > 40 || frameNo % 2)) return;
+  renderer?.render(scene, camera); rendered = true;
+  // a phone that still cannot keep up gets fewer pixels, one step at a time
+  const now = performance.now(), gap = now - lastDraw; lastDraw = now;
+  if (renderer && gap < 200) {
+    slowAvg += (gap - slowAvg) * 0.04;
+    if (slowAvg > 40 && now - lastDrop > 2500 && pixelRatio > 1) { pixelRatio = Math.max(1, pixelRatio - 0.25); renderer.setPixelRatio(pixelRatio); size(); lastDrop = now; slowAvg = 0; }
+  }
+}
+
+/* ---------- start ---------- */
+renderRows(); setCaption(''); warm(state.theme); loop();
+// lift the fog after a short hold; fonts get at most a second longer, never an endless wait
+const fontsOrTimeout = Promise.race([document.fonts?.ready ?? Promise.resolve(), new Promise((r) => setTimeout(r, 2500))]);
+Promise.all([fontsOrTimeout, new Promise((r) => setTimeout(r, reduceMotion ? 300 : 1500))]).then(() => {
+  window.__ondaLift ? window.__ondaLift() : $('#intro')?.remove();
+  setTimeout(() => { warmReady = true; }, 2600);
+});
+}
+</script>
+
+</body>
+</html>

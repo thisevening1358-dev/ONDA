@@ -1,0 +1,109 @@
+<title>ONDA</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="theme-color" content="#dcdff0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="app/style.css">
+
+<div id="app">
+  <div class="air" aria-hidden="true"><i class="mist"></i><i class="aurora"></i><i class="floor"></i></div>
+
+  <div id="shell">
+    <header class="top">
+      <span class="logo">ONDA</span>
+      <div class="actions">
+        <button class="icon-btn" id="openCollection" type="button" aria-label="오브제 도감" data-icon="squares"></button>
+        <button class="icon-btn" id="mode" type="button" aria-label="다크 모드" data-icon="moon"></button>
+        <button class="icon-btn" id="openMenu" type="button" aria-label="메뉴" aria-expanded="false" data-icon="list"></button>
+      </div>
+    </header>
+
+    <main class="stage" id="stage" aria-label="오브제 공간. 끌어서 돌려보고, 톡 누르면 튀어 올라요.">
+      <div class="halo" aria-hidden="true"></div>
+      <canvas id="gl" role="img" aria-label="켜진 소리들이 합쳐진 오브제"></canvas>
+      <button class="float raised press" id="timerPill" type="button" hidden><span data-icon="timer"></span><span id="timerText"></span></button>
+      <div class="float raised" id="toast" role="status" hidden><span data-icon="sparkle"></span><span>새 오브제를 찾았어요</span><span class="count" id="toastCount"></span></div>
+      <div class="caption" id="caption" aria-live="polite"><strong id="capName"></strong><span id="capParts"></span><em id="capHint" hidden>끌어서 360도로 돌려보세요</em></div>
+    </main>
+
+    <section class="mixer" id="mixer" aria-label="믹서">
+      <div id="rows"></div>
+      <div class="mixer-foot"><button class="text-btn" id="allOff" type="button">모두 끄기</button></div>
+    </section>
+
+    <div class="swipe" id="swipe" aria-label="위로 쓸어 올리면 앱을 닫아도 소리가 계속 나와요" data-icon="up"></div>
+  </div>
+
+  <div class="veil" id="veil" hidden></div>
+
+  <div class="pop glass" id="menu" role="dialog" aria-label="메뉴" hidden>
+    <div class="pop-sec"><div class="themes" id="themes" role="radiogroup" aria-label="테마"></div></div>
+    <div class="pop-sec"><span class="cap">슬립 타이머</span><div class="choices" id="timerChoices" role="radiogroup" aria-label="슬립 타이머"></div></div>
+    <div class="pop-sec"><span class="cap">프리셋</span><div class="presets" id="presets"></div></div>
+    <div class="expand" id="saveExpand"><div><div class="save-panel">
+      <h3>새 프리셋</h3>
+      <label class="cap" for="presetName">이름</label>
+      <input class="field sunken" id="presetName" maxlength="16" autocomplete="off">
+      <span class="cap">아이콘</span>
+      <div class="icon-pick" id="iconPick" role="radiogroup" aria-label="아이콘"></div>
+      <p class="hint" id="saveHint" hidden>소리를 하나 이상 켜면 저장할 수 있어요</p>
+      <div class="save-actions"><button class="cancel" id="saveCancel" type="button">취소</button><button class="wide-btn raised press" id="saveConfirm" type="button">저장</button></div>
+    </div></div></div>
+    <button class="wide-btn raised press" id="saveOpen" type="button"><span data-icon="plus"></span>지금 믹스 저장</button>
+  </div>
+
+  <div class="pop glass" id="texture" role="dialog" aria-label="소리 결" hidden>
+    <h3 id="texTitle"></h3>
+    <div class="choices" id="texChoices" role="radiogroup"></div>
+  </div>
+
+  <section id="collection" aria-label="오브제 도감" hidden>
+    <div class="col-top"><button class="icon-btn" id="closeCollection" type="button" aria-label="닫기" data-icon="back"></button><span>오브제 도감</span><span class="count" id="colCount"></span></div>
+    <div class="col-head"><h2 id="colTitle"></h2><p>모양을 보면 어떤 소리를 섞었는지 알 수 있어요</p></div>
+    <div id="groups"></div>
+  </section>
+
+  <section id="lock" aria-label="잠금 화면" hidden>
+    <img class="lock-art" id="lockArt" alt="">
+    <div class="lock-clock lock-dim"><small id="lockDate"></small><b id="lockTime"></b></div>
+    <div class="lock-list night" id="lockList" hidden><div class="cap">프리셋</div><div id="lockPresets"></div><div class="cap">슬립 타이머</div><div class="choices lock-timer" id="lockTimer" role="radiogroup" aria-label="슬립 타이머"></div></div>
+    <div class="player night">
+      <div class="now">
+        <button class="open-app" id="openApp" type="button" aria-label="ONDA 열기"><img id="lockThumb" alt=""><span><b id="lockTitle"></b><small id="lockSub"></small></span></button>
+        <button class="round" id="lockListBtn" type="button" aria-label="프리셋 고르기" data-icon="list"></button>
+      </div>
+      <div class="controls">
+        <button id="prevPreset" type="button" aria-label="이전 프리셋" data-icon="prev"></button>
+        <button class="play" id="playPause" type="button" aria-label="일시정지" data-icon="pause"></button>
+        <button id="nextPreset" type="button" aria-label="다음 프리셋" data-icon="next"></button>
+      </div>
+    </div>
+    <div class="lock-bar"></div>
+  </section>
+</div>
+
+<div id="intro" aria-hidden="true">
+  <i class="fog" style="width:70%;height:40%;left:-10%;top:10%;--fx:-40%;--fy:-30%"></i>
+  <i class="fog" style="width:80%;height:46%;right:-20%;top:40%;--fx:45%;--fy:10%"></i>
+  <i class="fog" style="width:90%;height:40%;left:5%;bottom:-10%;--fx:-10%;--fy:50%"></i>
+  <span class="word">ONDA</span>
+</div>
+
+<script>
+  // a safety net: whatever happens in the app script, the fog lifts
+  (function () {
+    var lift = function () { var i = document.getElementById('intro'); if (!i || i.classList.contains('lift')) return; i.classList.add('lift'); setTimeout(function () { i.remove(); }, 2500); };
+    window.__ondaLift = lift;
+    setTimeout(lift, 6000);
+    window.addEventListener('error', function () { setTimeout(lift, 300); });
+    window.addEventListener('unhandledrejection', function () { setTimeout(lift, 300); });
+  })();
+</script>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"
+} }
+</script>
+<script type="module" src="app/app.js"></script>
