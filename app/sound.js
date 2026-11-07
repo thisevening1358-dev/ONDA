@@ -5,6 +5,8 @@
      sound.fadeTo(0..1, seconds)     master level, used by the sleep timer and pause
      sound.place(id, x, y, z)        where that sound is around the listener (-z is in front), any length
    Each sound is built on first use, so a theme you never open costs nothing.
+   Nature and city sounds play recorded loops from sounds/ (see FILES), with the synthesised version underneath as
+   a layer some textures add, and as the fallback while a file loads or if it cannot load. Noise sounds are synthesised.
    Made for falling asleep: warm low-heavy beds that move slowly, no hard clicks, every small event has a soft
    attack and is muffled, and the master gently levels whatever the mix adds up to. */
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
@@ -13,7 +15,9 @@ const OUT = 0.34;
 
 let ctx = null, master = null, pinkBuf = null, brownBuf = null, whiteBuf = null;
 const tracks = {};          // id -> { gain, apply(texture) }
-const levels = {}, textures = {}, places = {};
+const levels = {}, textures = {}, places = {}, quiet = {};
+// a synthesised sound makes its small events only while it can be heard
+const live = (id) => levels[id] > 0 && !quiet[id];
 
 function buffers() {
   const n = ctx.sampleRate * 4;
@@ -37,7 +41,7 @@ const panned = (node, pan) => { if (!ctx.createStereoPanner || !pan) return node
 // a slow random walk instead of a sine: breath, gusts and swells never repeat the same shape
 function drift(param, range, every = [1.2, 3], id = null) {
   (function step() {
-    if (!id || levels[id] > 0) { const [lo, hi] = range(); const d = rand(...every); param.setTargetAtTime(rand(lo, hi), ctx.currentTime, d * 0.55); setTimeout(step, d * 1000); }
+    if (!id || live(id)) { const [lo, hi] = range(); const d = rand(...every); param.setTargetAtTime(rand(lo, hi), ctx.currentTime, d * 0.55); setTimeout(step, d * 1000); }
     else setTimeout(step, 800);
   })();
 }
@@ -65,7 +69,7 @@ function swell(out, { rise = 1, fall = 1.5, amp = 0.3, buf = pinkBuf, f0 = 300, 
   s.start(t, rand(0, 3)); s.stop(t + rise + fall * 6);
 }
 // run fn on a jittered timer while the sound is audible
-function every(id, delay, fn) { (function loop() { if (levels[id] > 0) fn(); setTimeout(loop, delay()); })(); }
+function every(id, delay, fn) { (function loop() { if (live(id)) fn(); setTimeout(loop, delay()); })(); }
 
 const BUILD = {
   /* ---------- 자연 ---------- */
@@ -168,7 +172,7 @@ const BUILD = {
     let rate = 1, left = 0;
     (function loop() {
       let wait = rand(110, 190);
-      if (levels.typing > 0) {
+      if (live('typing')) {
         const pan = rand(-0.2, 0.2);
         if (left <= 0) {   // end of a word: the space bar, then a breath
           grain(keys, { attack: 0.003, decay: 0.02, f: 650, q: 1.2, amp: 0.05, pan }); tone(keys, { f: 150, attack: 0.003, decay: 0.03, amp: 0.035, pan });
@@ -203,15 +207,16 @@ const BUILD = {
     src(brownBuf).connect(filt('lowpass', 240, 0.5)).connect(gain(0.3)).connect(air);
     const blade = lfo(6, 0.02, air.gain);
     const motor = ctx.createOscillator(); motor.frequency.value = 60; const mg = gain(0.012); motor.connect(filt('lowpass', 200, 0.5)).connect(mg).connect(g); motor.start();
-    return (t) => { ramp(airF.frequency, [650, 1000, 1500][t]); ramp(air.gain, [0.4, 0.55, 0.72][t]); ramp(blade.o.frequency, [4, 6, 8][t]); };
+    return (t) => { ramp(airF.frequency, [420, 1000, 2600][t]); ramp(air.gain, [0.3, 0.55, 0.95][t]); ramp(blade.o.frequency, [3, 6, 9][t]); ramp(blade.g.gain, [0.01, 0.02, 0.06][t]); ramp(mg.gain, [0.006, 0.012, 0.02][t]); };
   },
   // inside a plane at night: the deep, even roar of the cabin, the vents, and the engines' faint drone
   cabin(g) {
     const lp = filt('lowpass', 420, 0.5), lv = gain(0.75); src(brownBuf).connect(lp).connect(lv).connect(g);
     src(pinkBuf).connect(filt('bandpass', 950, 0.4)).connect(gain(0.035)).connect(g);
+    const vent = gain(0.035); src(pinkBuf).connect(filt('bandpass', 1400, 0.5)).connect(vent).connect(g);
     const drone = ctx.createOscillator(); drone.frequency.value = 96; const dg = gain(0.006); drone.connect(dg).connect(g); drone.start();
     lfo(0.03, 1.2, drone.frequency);
-    return (t) => { ramp(lp.frequency, [280, 420, 600][t]); ramp(lv.gain, [0.6, 0.75, 0.9][t]); };
+    return (t) => { ramp(lp.frequency, [200, 420, 1200][t]); ramp(lv.gain, [0.45, 0.75, 1.2][t]); ramp(vent.gain, [0, 0.02, 0.07][t]); ramp(dg.gain, [0.002, 0.006, 0.014][t]); };
   },
   // an old radio between stations: a soft hiss whose colour slowly drifts, and only the faintest crackle
   static(g) {
@@ -220,8 +225,8 @@ const BUILD = {
     drift(bp.frequency, () => c.f, [3, 7], 'static');
     every('static', () => 90, () => { if (Math.random() < c.chance) grain(g, { attack: 0.0015, decay: 0.004, f: rand(2500, 4500), q: 0.8, amp: c.amp * rand(0.5, 1), pan: rand(-0.4, 0.4) }); });
     return (t) => {
-      c = [{ f: [900, 1700], chance: 0, amp: 0 }, { f: [1300, 2400], chance: 0.05, amp: 0.012 }, { f: [1800, 3200], chance: 0.1, amp: 0.016 }][t];
-      ramp(top.frequency, [3000, 4500, 6000][t]); ramp(sg.gain, [0.26, 0.3, 0.36][t]);
+      c = [{ f: [600, 1100], chance: 0, amp: 0 }, { f: [1300, 2400], chance: 0.05, amp: 0.012 }, { f: [2600, 4500], chance: 0.22, amp: 0.028 }][t];
+      ramp(top.frequency, [1800, 4500, 8500][t]); ramp(sg.gain, [0.2, 0.3, 0.46][t]);
     };
   },
   // a fridge at night: a low mains hum and a compressor that slowly comes on and off
@@ -235,12 +240,83 @@ const BUILD = {
       hg.gain.setTargetAtTime(on ? level : level * 0.25, ctx.currentTime, 3);
       setTimeout(() => cycle(!on), (on ? rand(30, 50) : rand(15, 25)) * 1000);
     })(true);
-    return (t) => { level = [0.06, 0.1, 0.15][t]; ramp(hg.gain, level, 1); ramp(body.gain, [0.2, 0.3, 0.42][t]); };
+    return (t) => { level = [0.03, 0.1, 0.24][t]; ramp(hg.gain, level, 1); ramp(body.gain, [0.1, 0.3, 0.6][t]); };
   },
 };
 
+/* ---------- recorded loops ---------- */
+const FILES = { fire: 'sounds/fire.mp3', wave: 'sounds/wave.mp3', wind: 'sounds/wind.mp3', rain: 'sounds/rain.mp3',
+  coffee: 'sounds/coffee.mp3', train: 'sounds/train.mp3', typing: 'sounds/typing.mp3', page: 'sounds/page.mp3' };
+// the three textures of a recorded sound, made clearly apart: speed (which also moves the pitch), how bright it is,
+// how loud, and how much of the synthesised version joins in, and at which of its textures (st)
+const MID = { rate: 1, lp: 9000, g: 1, synth: 0 };
+const VOICE = {
+  fire: [{ rate: 0.8, lp: 1500, g: 0.6, synth: 0.5, st: 0 }, MID, { rate: 1.15, lp: 11000, g: 1.3, synth: 0.7, st: 2 }],
+  wave: [{ rate: 1.25, lp: 1800, g: 0.5, synth: 0 }, MID, { rate: 0.82, lp: 11000, g: 1.35, synth: 0.6, st: 2 }],
+  wind: [{ rate: 0.8, lp: 1600, g: 0.55, synth: 0 }, MID, { rate: 1.2, lp: 11000, g: 1.7, synth: 0.9, st: 2 }],
+  rain: [{ rate: 0.88, lp: 2200, g: 0.45, synth: 0.4, st: 0 }, MID, { rate: 1.1, lp: 11000, g: 1.35, synth: 0.7, st: 2 }],
+  coffee: [{ rate: 0.85, lp: 2000, g: 0.28, synth: 0.5, st: 0 }, MID, { rate: 1.15, lp: 11000, g: 1.5, synth: 0.9, st: 2 }],
+  train: [{ rate: 0.85, lp: 450, g: 0.6, synth: 0 }, MID, { rate: 1.12, lp: 11000, g: 1.3, synth: 0.8, st: 2 }],
+  typing: [{ rate: 0.78, lp: 2600, g: 0.6, synth: 0 }, MID, { rate: 1.3, lp: 11000, g: 1.5, synth: 0.9, st: 2 }],
+  page: [{ rate: 0.85, lp: 3000, g: 0.5, synth: 0 }, MID, { rate: 1.25, lp: 11000, g: 1.7, synth: 1, st: 2 }],
+};
+const XF = 3;   // seconds of crossfade where a loop wraps around, so the seam is never heard
+const fadeIn = new Float32Array(32).map((_, i) => Math.sin((i / 31) * Math.PI / 2)), fadeOut = fadeIn.slice().reverse();
+// a loop of decoded audio: each pass overlaps the next with an equal-power crossfade; a new speed crossfades in too
+function loop(buf, out, rate) {
+  let cur = null, timer = 0;
+  const voice = (at, offset, r, fade) => {
+    const s = ctx.createBufferSource(), env = gain(0); s.buffer = buf; s.playbackRate.value = r;
+    s.connect(env).connect(out);
+    env.gain.setValueCurveAtTime(fadeIn, at, fade);
+    const end = at + (buf.duration - offset) / r;
+    env.gain.setValueCurveAtTime(fadeOut, end - XF, XF);
+    s.start(at, offset); s.stop(end + 0.05);
+    const v = { s, env, end };
+    clearTimeout(timer); timer = setTimeout(() => { if (cur === v) cur = voice(end - XF, 0, r, XF); }, Math.max(0, (end - XF - ctx.currentTime - 1) * 1000));
+    return v;
+  };
+  cur = voice(ctx.currentTime + 0.05, rand(0, buf.duration * 0.6), rate, 1.5);
+  return {
+    setRate(r) {   // the old pass melts away while the new one comes in at its new speed
+      if (!cur || cur.s.playbackRate.value === r) return;
+      const n = ctx.currentTime, old = cur;
+      old.env.gain.cancelScheduledValues(n); old.env.gain.setValueAtTime(old.env.gain.value, n); old.env.gain.linearRampToValueAtTime(0, n + 2); old.s.stop(n + 2.1);
+      cur = voice(n + 0.02, rand(0, buf.duration * 0.6), r, 2);
+    },
+    stop() { clearTimeout(timer); if (cur) { const n = ctx.currentTime; cur.env.gain.cancelScheduledValues(n); cur.env.gain.setTargetAtTime(0, n, 0.3); cur.s.stop(n + 2); } cur = null; },
+  };
+}
+// a recorded sound with its synthesised layer; until the file is ready (or if it never loads) the synth plays in full
+function recorded(id, g) {
+  const synthOut = gain(TRIM[id]), applySynth = BUILD[id](synthOut); synthOut.connect(g);
+  const lp = filt('lowpass', 9000, 0.5), fileOut = gain(0); lp.connect(fileOut).connect(g);
+  let player = null, buf = null, sleepTimer = 0, tex = textures[id] ?? 1;
+  const apply = (t) => {
+    tex = t; const v = VOICE[id][t]; applySynth(v.st ?? t);
+    if (!player) { ramp(synthOut.gain, TRIM[id], 0.5); quiet[id] = false; return; }
+    ramp(fileOut.gain, v.g * FTRIM[id], 0.5); ramp(lp.frequency, v.lp, 0.5); ramp(synthOut.gain, v.synth * TRIM[id], 0.6);
+    quiet[id] = v.synth === 0; player.setRate(v.rate);
+  };
+  const start = () => { if (!player && buf) { player = loop(buf, lp, VOICE[id][tex].rate); apply(tex); } };
+  fetch(FILES[id]).then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(r.status))).then((a) => ctx.decodeAudioData(a))
+    .then((b) => { buf = b; if (levels[id] > 0) start(); }).catch(() => {});
+  return {
+    apply,
+    // switched off for a while: stop the loop and let the decoded audio go, it comes back from the cache when needed
+    level(v) {
+      clearTimeout(sleepTimer);
+      if (v > 0) { start(); return; }
+      sleepTimer = setTimeout(() => { if (levels[id] > 0 || !player) return; player.stop(); player = null; quiet[id] = false; }, 20000);
+    },
+  };
+}
+
 // how loud each sound sits next to the others, measured so that no single one jumps out of a mix
 // broadband beds sit near -31 dB, the low rumbles a little higher (low sound feels quieter), sparse ones by their events
+// recorded loops are levelled to about -30 LUFS in prep; from each file's whole-length RMS this lifts the steady ones
+// to the synthesised sounds' -31 dB, and keeps the clicky ones (typing, coffee, page) a few dB under, as their peaks carry
+const FTRIM = { fire: 1.95, wave: 1.84, wind: 1.16, rain: 2.02, coffee: 1.4, train: 1.6, typing: 1, page: 1.07 };
 const TRIM = { fire: 0.25, wave: 0.38, wind: 0.42, rain: 0.54, coffee: 1.17, train: 0.44, typing: 1.78, page: 3.5, fan: 0.4, cabin: 0.28, static: 1.24, hum: 0.4 };
 
 // a sound goes two ways: most of it through a 3D panner that places it around the head, and a little straight out,
@@ -266,12 +342,17 @@ function setPlace(t, x, y, z) {
 function ensure(id) {
   if (!ctx || tracks[id] || !BUILD[id]) return;
   const g = gain(0), s = space(g);
-  const apply = BUILD[id](g);
-  tracks[id] = { g, apply, space: s }; apply(textures[id] ?? 1);
+  const rec = FILES[id] ? recorded(id, g) : null, apply = rec ? rec.apply : BUILD[id](g);
+  tracks[id] = { g, apply, rec, space: s }; apply(textures[id] ?? 1);
   const at = places[id] || [0, 0, -1]; setPlace(tracks[id], at[0], at[1], at[2]);
 }
 // sounds come in and leave slowly, so moving a slider never starts anything with a jolt
-function update(id) { ensure(id); const t = tracks[id]; if (t) t.g.gain.setTargetAtTime((levels[id] || 0) * OUT * (TRIM[id] ?? 1), ctx.currentTime, 0.25); }
+function update(id) {
+  if (!tracks[id] && !(levels[id] > 0)) return;   // nothing is built or downloaded for a sound until it is turned on
+  ensure(id); const t = tracks[id]; if (!t) return;
+  t.g.gain.setTargetAtTime((levels[id] || 0) * OUT * (t.rec ? 1 : TRIM[id] ?? 1), ctx.currentTime, 0.25);   // a recorded track trims its two layers itself
+  t.rec?.level(levels[id] || 0);
+}
 
 export const sound = {
   get ready() { return !!ctx; },
