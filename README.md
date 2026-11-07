@@ -6,6 +6,8 @@
 - 소리는 오디오 파일 없이 Web Audio로 실시간 합성
 - 오브제 도감, 프리셋 저장, 슬립 타이머, 소리 결 조절, 다크 모드
 
+모든 기능을 쉽게 정리한 설명은 [FEATURES.md](FEATURES.md)에 있다.
+
 ## 구조
 
 - `index.src.html`, `app/`: 원본. 고친 뒤 `python build.py`를 실행하면 `index.html`이 만들어진다.
