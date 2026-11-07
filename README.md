@@ -14,8 +14,15 @@
 
 로컬에서는 이 폴더에서 `python -m http.server`로 서버를 띄워 연다.
 
-## 사용한 것
+## 사용한 것과 라이선스
 
-- [three.js](https://threejs.org) (CDN)
-- [Pretendard](https://github.com/orioncactus/pretendard), SIL Open Font License 1.1 (`fonts/LICENSE-Pretendard.txt`)
-- [Cormorant Garamond](https://fonts.google.com/specimen/Cormorant+Garamond) (Google Fonts)
+소리는 녹음 파일 없이 모두 Web Audio로 실시간 합성한다. 오브제와 썸네일도 이 저장소의 코드로 만든 것이다. 외부에서 가져온 것은 아래 넷이고, 원문 라이선스는 `licenses/`에 있다.
+
+| 이름 | 쓰는 곳 | 라이선스 |
+|---|---|---|
+| [three.js](https://threejs.org) r169 | 3D 오브제 (CDN) | MIT, `licenses/three.js-MIT.txt` |
+| [Phosphor Icons](https://phosphoricons.com) | 아이콘 경로 | MIT, `licenses/Phosphor-Icons-MIT.txt` |
+| [Pretendard](https://github.com/orioncactus/pretendard) | 본문 글꼴 (`fonts/`) | SIL OFL 1.1, `licenses/Pretendard-OFL.txt` |
+| [Cormorant Garamond](https://fonts.google.com/specimen/Cormorant+Garamond) | 로고 글꼴 (Google Fonts) | SIL OFL 1.1, `licenses/Cormorant-Garamond-OFL.txt` |
+
+앱으로 배포할 때는 이 라이선스 문구를 앱 안의 오픈소스 라이선스 화면이나 함께 배포하는 파일에 넣는다.

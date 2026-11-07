@@ -732,10 +732,26 @@ function warm(t) {
 /* ---------- loop ---------- */
 const clock = new THREE.Clock(), idleE = new THREE.Euler(), ID = new THREE.Quaternion(), tmpV = V3(0, 0, 0);
 let rendered = false;
+/* ---------- the sound turns with the object ---------- */
+// the object's face is what sounds: spread across it, turned with it, heard from where it now points.
+// three.js has +z toward the viewer and audio has -z in front, so z flips on the way out
+let spaceKey = null; const spaceQ = new THREE.Quaternion(), spaceV = V3(0, 0, 0);
+function syncSpace() {
+  const key = activeKey();
+  if (key === spaceKey && userQ.angleTo(spaceQ) < 0.004) return;
+  spaceKey = key; spaceQ.copy(userQ);
+  const on = key ? key.split('+') : [], span = [0, 0, 0.6, 0.85, 1.05][on.length] || 0;   // half the arc in radians
+  on.forEach((id, i) => {
+    const az = on.length > 1 ? -span + (2 * span * i) / (on.length - 1) : 0;
+    spaceV.set(Math.sin(az), 0, Math.cos(az)).applyQuaternion(userQ);
+    sound.place(id, spaceV.x, spaceV.y, -spaceV.z);
+  });
+}
 let frameNo = 0, popFrames = 0, lastDraw = 0, slowAvg = 0, lastDrop = 0, pixelRatio = Math.min(devicePixelRatio, 1.5);
 function loop() {
   requestAnimationFrame(loop);
   const dt = Math.min(clock.getDelta(), 1 / 30), t = clock.elapsedTime;
+  syncSpace();
   // nothing of the 3D space is visible: keep only the sliders moving
   if (document.hidden || lockOpen || !col.hidden) { for (const s of [...activeSliders]) if (!s.tick(dt)) activeSliders.delete(s); return; }
   U.time.value = t * MO;
